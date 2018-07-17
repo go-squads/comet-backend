@@ -10,7 +10,7 @@ COMET (Configuration Management System) backend is an API Server that controls t
 go build -o <executable-name>
 ```
 
-## Test Instrcutions
+## Test Instructions
 
 ```go
 go test ./... -v
