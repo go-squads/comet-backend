@@ -1,10 +1,11 @@
 package appcontext
 
-import(
+import (
 	"database/sql"
+	"log"
 
-	_ "github.com/lib/pq"
 	"github.com/go-squads/comet-backend/config"
+	_ "github.com/lib/pq"
 )
 
 type appContext struct {
@@ -13,21 +14,21 @@ type appContext struct {
 
 var context *appContext
 
-func initializeDB() *sql.DB{
+func initializeDB() *sql.DB {
 	db, err := sql.Open("postgres", config.ConnectionString())
 
-	if err != nil{
-		log.Fatalf(err)
+	if err != nil {
+		log.Fatalf("%s", err)
 	}
 
 	if err = db.Ping(); err != nil {
-		log.Fatalf(err)
+		log.Fatalf("%s", err)
 	}
 
 	return db
 }
 
-func Initiate(){
+func Initiate() {
 	db := initializeDB()
 
 	context = &appContext{
@@ -35,6 +36,6 @@ func Initiate(){
 	}
 }
 
-func GetDB() *sql.DB{
+func GetDB() *sql.DB {
 	return context.db
 }
