@@ -1,8 +1,8 @@
 package domain
 
 type Configuration struct {
-	NamespaceID int
-	Version     int
-	Key         string
-	Value       string
+	NamespaceID int    `json:"namespace"`
+	Version     int    `json:"version"`
+	Key         string `json:"key"`
+	Value       string `json:"value"`
 }
