@@ -1,15 +1,15 @@
 package handler
 
 import (
+	"log"
 	"net/http"
 	"net/http/httptest"
-	"log"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPingHandlert (t *testing.T) {
+func TestPingHandler(t *testing.T) {
 	w := httptest.NewRecorder()
 	r, err := http.NewRequest("GET", "/ping", nil)
 	if err != nil {
@@ -20,5 +20,5 @@ func TestPingHandlert (t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
-	assert.Equal(t, "{\"success\": \"pong\"}", w.Body.String())
+	assert.Equal(t, "{\"success\":\"pong\"}", w.Body.String())
 }
