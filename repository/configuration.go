@@ -24,6 +24,7 @@ const (
 func (self ConfigRepository) GetConfiguration(appName string, namespaceName string, version string) []domain.Configuration {
 	var cfg []domain.Configuration
 	var activeVersion int
+	var chosenVersion int
 	var applicationId int
 	var namespaceId int
 	var rows *sql.Rows
@@ -33,10 +34,12 @@ func (self ConfigRepository) GetConfiguration(appName string, namespaceName stri
 
 	if version != "" {
 		versionInt, _ := strconv.Atoi(version)
-		rows, err = self.db.Query(getConfigurationKeyValueQuery, versionInt, namespaceId)
+		chosenVersion = versionInt
 	} else {
-		rows, err = self.db.Query(getConfigurationKeyValueQuery, activeVersion, namespaceId)
+		chosenVersion = activeVersion
 	}
+
+	rows, err = self.db.Query(getConfigurationKeyValueQuery, chosenVersion, namespaceId)
 
 	if err != nil {
 		log.Fatalf(err.Error())
@@ -47,7 +50,7 @@ func (self ConfigRepository) GetConfiguration(appName string, namespaceName stri
 		var value string
 
 		err = rows.Scan(&key, &value)
-		cfg = append(cfg, domain.Configuration{namespaceId, activeVersion, key, value})
+		cfg = append(cfg, domain.Configuration{namespaceId, chosenVersion, key, value})
 	}
 	return cfg
 }
