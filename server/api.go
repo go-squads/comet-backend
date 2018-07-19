@@ -1,10 +1,11 @@
 package server
 
 import (
-	"net/http"
 	"log"
+	"net/http"
 )
-func StartAPIServer(){
+
+func StartAPIServer() {
 	muxRouter := Router()
-	log.Fatal(http.ListenAndServe(":8000",muxRouter))
+	log.Fatal(http.ListenAndServe(":8000", muxRouter))
 }

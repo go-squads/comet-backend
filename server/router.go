@@ -1,8 +1,8 @@
 package server
 
 import (
-	"github.com/gorilla/mux"
 	"github.com/go-squads/comet-backend/handler"
+	"github.com/gorilla/mux"
 )
 
 func Router() *mux.Router {
