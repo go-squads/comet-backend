@@ -50,7 +50,7 @@ func (self ConfigRepository) GetConfiguration(appName string, namespaceName stri
 		var value string
 
 		err = rows.Scan(&key, &value)
-		cfg = append(cfg, domain.Configuration{namespaceId, chosenVersion, key, value})
+		cfg = append(cfg, domain.Configuration{NamespaceID: namespaceId, Version: chosenVersion, Key: key, Value: value})
 	}
 	return cfg
 }
