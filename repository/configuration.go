@@ -21,10 +21,11 @@ const (
 	getNamespaceIdAndLatestVersionQuery = "SELECT id, latest_version FROM namespace WHERE app_id = $1 AND name = $2"
 	getConfigurationKeyValueQuery       = "SELECT key,value FROM configuration WHERE version = $1 AND namespace_id = $2"
 
-	insertNewConfigurationQuery          = "INSERT INTO configuration VALUES ($1, $2, $3, $4)"                           // namespace_id, version, key, value
+	insertNewConfigurationQuery          = "INSERT INTO configuration VALUES ($1, $2, $3, $4)"                                                                                                       // namespace_id, version, key, value
 	insertHistoryQuery                   = "INSERT INTO history (user_id, namespace_id, predecessor_version, successor_version, created_at) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP) RETURNING id" // user_id, namespace_id, predecessor_version, successor version
-	insertConfigurationChangesQuery      = "INSERT INTO configuration_change VALUES ($1, $2, $3)"                        // history_id, key, new_value
+	insertConfigurationChangesQuery      = "INSERT INTO configuration_change VALUES ($1, $2, $3)"                                                                                                    // history_id, key, new_value
 	incrementNamespaceActiveVersionQuery = "UPDATE namespace SET active_version = $1, latest_version = $1 WHERE id = $2"
+	showHistoryQuery                     = "SELECT u.username,n.name,predecessor_version,successor_version,key,new_value FROM history AS h INNER JOIN configuration_change as cfg ON h.id=cfg.history_id INNER JOIN namespace AS n ON h.namespace_id = n.id INNER JOIN users AS u ON h.user_id = u.id"
 )
 
 func (self ConfigRepository) GetConfiguration(appName string, namespaceName string, version string) []domain.Configuration {
@@ -85,6 +86,29 @@ func (self ConfigRepository) InsertConfiguration(newConfigs domain.Configuration
 	}
 
 	self.db.Exec(incrementNamespaceActiveVersionQuery, newVersion, namespaceId)
+}
+
+func (self ConfigRepository) ReadHistory() []domain.ConfigurationHistory {
+	var history []domain.ConfigurationHistory
+	var rows *sql.Rows
+
+	rows, err = self.db.Query(showHistoryQuery)
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+
+	for rows.Next() {
+		var username string
+		var namespace string
+		var predecessorVersion int
+		var successorVersion int
+		var key string
+		var value string
+
+		err = rows.Scan(&username, &namespace, &predecessorVersion, &successorVersion, &key, &value)
+		history = append(history, domain.ConfigurationHistory{Username: username, Namespace: namespace, PredecessorVersion: predecessorVersion, SuccessorVersion: successorVersion, Key: key, Value: value})
+	}
+	return history
 }
 
 func NewConfigurationRepository() ConfigRepository {
