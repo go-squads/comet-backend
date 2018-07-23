@@ -14,10 +14,10 @@ func ReadConfigurationHandler(w http.ResponseWriter, r *http.Request) {
 
 	configurationRepo := repository.NewConfigurationRepository()
 
-	cfg := configurationRepo.GetConfiguration(app, namespace, version)
+	appCfg := configurationRepo.GetConfiguration(app, namespace, version)
 
 	w.Header().Set("Content-type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
-	json.NewEncoder(w).Encode(cfg)
+	json.NewEncoder(w).Encode(appCfg)
 }

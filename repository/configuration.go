@@ -27,7 +27,8 @@ const (
 	incrementNamespaceActiveVersionQuery = "UPDATE namespace SET active_version = $1, latest_version = $1 WHERE id = $2"
 )
 
-func (self ConfigRepository) GetConfiguration(appName string, namespaceName string, version string) []domain.Configuration {
+func (self ConfigRepository) GetConfiguration(appName string, namespaceName string, version string) domain.ApplicationConfiguration {
+	var appConfig domain.ApplicationConfiguration
 	var cfg []domain.Configuration
 	var activeVersion int
 	var chosenVersion int
@@ -56,9 +57,10 @@ func (self ConfigRepository) GetConfiguration(appName string, namespaceName stri
 		var value string
 
 		err = rows.Scan(&key, &value)
-		cfg = append(cfg, domain.Configuration{NamespaceID: namespaceId, Version: chosenVersion, Key: key, Value: value})
+		cfg = append(cfg, domain.Configuration{Key: key, Value: value})
 	}
-	return cfg
+	appConfig = domain.ApplicationConfiguration{NamespaceID: namespaceId, Version: chosenVersion, Configurations: cfg}
+	return appConfig
 }
 
 func (self ConfigRepository) InsertConfiguration(newConfigs domain.ConfigurationRequest) {

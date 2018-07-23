@@ -1,8 +1,7 @@
 package domain
 
-type Configuration struct {
+type ApplicationConfiguration struct {
 	NamespaceID int    `json:"namespaceId"`
 	Version     int    `json:"version"`
-	Key         string `json:"key"`
-	Value       string `json:"value"`
+	Configurations []Configuration `json:"configurations"`
 }
