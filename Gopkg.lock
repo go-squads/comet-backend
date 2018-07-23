@@ -8,19 +8,6 @@
   version = "v1.1.0"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/go-squads/comet-backend"
-  packages = [
-    "appcontext",
-    "config",
-    "domain",
-    "handler",
-    "repository",
-    "server"
-  ]
-  revision = "3e9e8b497606b99245169a8628d474c9d8f0d2f9"
-
-[[projects]]
   name = "github.com/gorilla/context"
   packages = ["."]
   revision = "08b5f424b9271eedf6f9f0ce86cb9396ed337a42"
@@ -56,6 +43,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "7d2ee8db1dab1355185f1aaccad380d67c3d8ca78c63fa316f59f84cfab505dc"
+  inputs-digest = "3934a234e39973e8f1791f9d22c18a608d1093c51a9d8d084f950f02d2875c28"
   solver-name = "gps-cdcl"
   solver-version = 1
