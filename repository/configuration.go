@@ -64,7 +64,7 @@ func (self ConfigRepository) GetConfiguration(appName string, namespaceName stri
 	return appConfig
 }
 
-func (self ConfigRepository) InsertConfiguration(newConfigs domain.ConfigurationRequest) {
+func (self ConfigRepository) InsertConfiguration(newConfigs domain.ConfigurationRequest) domain.Response {
 	var latestVersion int
 	var activeVersion int
 	var newVersion int
@@ -72,22 +72,49 @@ func (self ConfigRepository) InsertConfiguration(newConfigs domain.Configuration
 	var historyId int
 	var namespaceId int
 
-	_ = self.db.QueryRow(getAppIdQuery, newConfigs.AppName).Scan(&applicationId)
-	_ = self.db.QueryRow(getNamespaceIdAndActiveVersionQuery, applicationId, newConfigs.Namespace).Scan(&namespaceId, &activeVersion)
-	_ = self.db.QueryRow(getNamespaceIdAndLatestVersionQuery, applicationId, newConfigs.Namespace).Scan(&namespaceId, &latestVersion)
+	err = self.db.QueryRow(getAppIdQuery, newConfigs.AppName).Scan(&applicationId)
+	if err != nil {
+		return domain.FailedResponse(err)
+	}
+
+	err = self.db.QueryRow(getNamespaceIdAndActiveVersionQuery, applicationId, newConfigs.Namespace).Scan(&namespaceId, &activeVersion)
+	if err != nil {
+		return domain.FailedResponse(err)
+	}
+
+	err = self.db.QueryRow(getNamespaceIdAndLatestVersionQuery, applicationId, newConfigs.Namespace).Scan(&namespaceId, &latestVersion)
+	if err != nil {
+		return domain.FailedResponse(err)
+	}
 
 	newVersion = latestVersion + 1
 
-	_ = self.db.QueryRow(insertHistoryQuery, 1, namespaceId, activeVersion, newVersion).Scan(&historyId)
+	err = self.db.QueryRow(insertHistoryQuery, 1, namespaceId, activeVersion, newVersion).Scan(&historyId)
+	if err != nil {
+		return domain.FailedResponse(err)
+	}
 
 	for _, config := range newConfigs.Data {
 		key := config.Key
 		value := config.Value
-		self.db.Exec(insertNewConfigurationQuery, namespaceId, newVersion, key, value)
-		self.db.Exec(insertConfigurationChangesQuery, historyId, key, value)
+
+		_, err = self.db.Exec(insertNewConfigurationQuery, namespaceId, newVersion, key, value)
+		if err != nil {
+			return domain.FailedResponse(err)
+		}
+
+		_, err = self.db.Exec(insertConfigurationChangesQuery, historyId, key, value)
+		if err != nil {
+			return domain.FailedResponse(err)
+		}
 	}
 
-	self.db.Exec(incrementNamespaceActiveVersionQuery, newVersion, namespaceId)
+	_, err := self.db.Exec(incrementNamespaceActiveVersionQuery, newVersion, namespaceId)
+	if err != nil {
+		return domain.FailedResponse(err)
+	} else {
+		return domain.SuccessResponse()
+	}
 }
 
 func (self ConfigRepository) ReadHistory() []domain.ConfigurationHistory {
