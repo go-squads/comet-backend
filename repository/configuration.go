@@ -17,6 +17,7 @@ type ConfigRepository struct {
 
 const (
 	getAppIdQuery                       = "SELECT id FROM application WHERE name = $1"
+	getNamespaceIdQuery                 = "SELECT id FROM namespace WHERE app_id = $1 AND name = $2"
 	getNamespaceIdAndActiveVersionQuery = "SELECT id, active_version FROM namespace WHERE app_id = $1 AND name = $2"
 	getNamespaceIdAndLatestVersionQuery = "SELECT id, latest_version FROM namespace WHERE app_id = $1 AND name = $2"
 	getConfigurationKeyValueQuery       = "SELECT key,value FROM configuration WHERE version = $1 AND namespace_id = $2"
@@ -25,7 +26,8 @@ const (
 	insertHistoryQuery                   = "INSERT INTO history (user_id, namespace_id, predecessor_version, successor_version, created_at) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP) RETURNING id" // user_id, namespace_id, predecessor_version, successor version
 	insertConfigurationChangesQuery      = "INSERT INTO configuration_change VALUES ($1, $2, $3)"                                                                                                    // history_id, key, new_value
 	incrementNamespaceActiveVersionQuery = "UPDATE namespace SET active_version = $1, latest_version = $1 WHERE id = $2"
-	showHistoryQuery                     = "SELECT u.username,n.name,predecessor_version,successor_version,key,new_value FROM history AS h INNER JOIN configuration_change as cfg ON h.id=cfg.history_id INNER JOIN namespace AS n ON h.namespace_id = n.id INNER JOIN users AS u ON h.user_id = u.id"
+	
+	showHistoryQuery                     = "SELECT u.username,n.name,predecessor_version,successor_version,key,new_value FROM history AS h INNER JOIN configuration_change as cfg ON h.id=cfg.history_id INNER JOIN namespace AS n ON h.namespace_id = n.id INNER JOIN users AS u ON h.user_id = u.id WHERE n.id = $1"
 )
 
 func (self ConfigRepository) GetConfiguration(appName string, namespaceName string, version string) domain.ApplicationConfiguration {
@@ -117,11 +119,23 @@ func (self ConfigRepository) InsertConfiguration(newConfigs domain.Configuration
 	}
 }
 
-func (self ConfigRepository) ReadHistory() []domain.ConfigurationHistory {
+func (self ConfigRepository) ReadHistory(appName string, namespace string) []domain.ConfigurationHistory {
 	var history []domain.ConfigurationHistory
+	var applicationId int
+	var namespaceId int
 	var rows *sql.Rows
 
-	rows, err = self.db.Query(showHistoryQuery)
+	err = self.db.QueryRow(getAppIdQuery, appName).Scan(&applicationId)
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+
+	err = self.db.QueryRow(getNamespaceIdQuery, applicationId, namespace).Scan(&namespaceId)
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+
+	rows, err = self.db.Query(showHistoryQuery, namespaceId)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}

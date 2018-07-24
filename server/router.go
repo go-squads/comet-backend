@@ -10,6 +10,6 @@ func Router() *mux.Router {
 	router.HandleFunc("/ping", handler.PingHandler).Methods("GET")
 	router.HandleFunc("/configuration", handler.ReadConfigurationHandler).Methods("GET")
 	router.HandleFunc("/configuration", handler.InsertConfigurationHandler).Methods("POST")
-	router.HandleFunc("/history", handler.ReadHistoryConfiguration).Methods("GET")
+	router.HandleFunc("/history/{app}/{namespace}", handler.ReadHistoryConfiguration).Methods("GET")
 	return router
 }
