@@ -156,14 +156,14 @@ func (self ConfigRepository) ReadHistory(appName string, namespace string) []dom
 	return history
 }
 
-func (self ConfigRepository) GetApplicationNamespace() []domain.Configuration {
+func (self ConfigRepository) GetApplicationNamespace() []domain.ApplicationNamespace {
 	var lsApplication []domain.ApplicationNamespace
 	var applicationName string
 	var namespaceApplication string
 	var rows *sql.Rows
 
-	err = self.db.QueryRow(getListOfApplicationNamespaceQuery)
-	if err != nill {
+	err = self.db.Query(getListOfApplicationNamespaceQuery)
+	if err != nil {
 		log.Fatalf(err.Error())
 	}
 
@@ -174,6 +174,8 @@ func (self ConfigRepository) GetApplicationNamespace() []domain.Configuration {
 		err = rows.Scan(&applicationName, &namespaceName)
 		lsApplication = append(lsApplication, domain.ApplicationNamespace{ApplicationName: applicationName, Namespace: namespaceName})
 	}
+
+	return lsApplication
 }
 
 func NewConfigurationRepository() ConfigRepository {
