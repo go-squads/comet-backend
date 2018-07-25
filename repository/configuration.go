@@ -26,10 +26,8 @@ const (
 	insertHistoryQuery                   = "INSERT INTO history (user_id, namespace_id, predecessor_version, successor_version, created_at) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP) RETURNING id" // user_id, namespace_id, predecessor_version, successor version
 	insertConfigurationChangesQuery      = "INSERT INTO configuration_change VALUES ($1, $2, $3)"                                                                                                    // history_id, key, new_value
 	incrementNamespaceActiveVersionQuery = "UPDATE namespace SET active_version = $1, latest_version = $1 WHERE id = $2"
-
-	showHistoryQuery = "SELECT u.username,n.name,predecessor_version,successor_version,key,new_value FROM history AS h INNER JOIN configuration_change as cfg ON h.id=cfg.history_id INNER JOIN namespace AS n ON h.namespace_id = n.id INNER JOIN users AS u ON h.user_id = u.id WHERE n.id = $1"
-
-	getListOfApplicationNamespaceQuery = "SELECT app.name, n.name FROM application AS app INNER JOIN namespace AS n ON app.id = n.id"
+	showHistoryQuery                     = "SELECT u.username,n.name,predecessor_version,successor_version,key,new_value FROM history AS h INNER JOIN configuration_change as cfg ON h.id=cfg.history_id INNER JOIN namespace AS n ON h.namespace_id = n.id INNER JOIN users AS u ON h.user_id = u.id WHERE n.id = $1"
+	getListOfApplicationNamespaceQuery   = "SELECT app.name, n.name FROM application AS app INNER JOIN namespace AS n ON app.id = n.id"
 )
 
 func (self ConfigRepository) GetConfiguration(appName string, namespaceName string, version string) domain.ApplicationConfiguration {
@@ -158,11 +156,8 @@ func (self ConfigRepository) ReadHistory(appName string, namespace string) []dom
 
 func (self ConfigRepository) GetApplicationNamespace() []domain.ApplicationNamespace {
 	var lsApplication []domain.ApplicationNamespace
-	var applicationName string
-	var namespaceApplication string
-	var rows *sql.Rows
 
-	err = self.db.Query(getListOfApplicationNamespaceQuery)
+	rows, err := self.db.Query(getListOfApplicationNamespaceQuery)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
