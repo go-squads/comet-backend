@@ -28,6 +28,8 @@ const (
 	incrementNamespaceActiveVersionQuery = "UPDATE namespace SET active_version = $1, latest_version = $1 WHERE id = $2"
 
 	showHistoryQuery = "SELECT u.username,n.name,predecessor_version,successor_version,key,new_value FROM history AS h INNER JOIN configuration_change as cfg ON h.id=cfg.history_id INNER JOIN namespace AS n ON h.namespace_id = n.id INNER JOIN users AS u ON h.user_id = u.id WHERE n.id = $1"
+
+	getListOfApplicationNamespaceQuery = "SELECT app.name, n.name FROM application AS app INNER JOIN namespace AS n ON app.id = n.id"
 )
 
 func (self ConfigRepository) GetConfiguration(appName string, namespaceName string, version string) domain.ApplicationConfiguration {
@@ -152,6 +154,26 @@ func (self ConfigRepository) ReadHistory(appName string, namespace string) []dom
 		history = append(history, domain.ConfigurationHistory{Username: username, Namespace: namespace, PredecessorVersion: predecessorVersion, SuccessorVersion: successorVersion, Key: key, Value: value})
 	}
 	return history
+}
+
+func (self ConfigRepository) GetApplicationNamespace() []domain.Configuration {
+	var lsApplication []domain.ApplicationNamespace
+	var applicationName string
+	var namespaceApplication string
+	var rows *sql.Rows
+
+	err = self.db.QueryRow(getListOfApplicationNamespaceQuery)
+	if err != nill {
+		log.Fatalf(err.Error())
+	}
+
+	for rows.Next() {
+		var applicationName string
+		var namespaceName string
+
+		err = rows.Scan(&applicationName, &namespaceName)
+		lsApplication = append(lsApplication, domain.ApplicationNamespace{ApplicationName: applicationName, Namespace: namespaceName})
+	}
 }
 
 func NewConfigurationRepository() ConfigRepository {
