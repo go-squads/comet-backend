@@ -2,8 +2,8 @@ package handler
 
 import (
 	"encoding/json"
-	"net/http"
 	"log"
+	"net/http"
 	"time"
 
 	"github.com/go-squads/comet-backend/domain"
@@ -16,18 +16,15 @@ const (
 
 func addCookie(w http.ResponseWriter, name string, value string) {
 	expire := time.Now().AddDate(0, 0, 1)
-  cookie := http.Cookie{
-    Name:    name,
-    Value:   value,
-    Expires: expire,
-  }
-  http.SetCookie(w, &cookie)
+	cookie := http.Cookie{
+		Name:    name,
+		Value:   value,
+		Expires: expire,
+	}
+	http.SetCookie(w, &cookie)
 }
 
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
-	invalidCredentialsResponse := domain.Response{Status: http.StatusUnauthorized, Message: "Invalid Credentials"}
-	validCredentialsResponse := domain.Response{Status: http.StatusOK, Message: "Valid"}
-
 	decoder := json.NewDecoder(r.Body)
 	var user domain.User
 	err := decoder.Decode(&user)
@@ -36,8 +33,10 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userRepo := repository.GetUserRepository()
-
 	token := userRepo.LogIn(user)
+
+	invalidCredentialsResponse := domain.Response{Status: http.StatusUnauthorized, Message: "Invalid Credentials"}
+	validCredentialsResponse := domain.LoginResponse{Status: http.StatusOK, Message: "log_in", Token: token}
 
 	if token == "" {
 		w.WriteHeader(http.StatusUnauthorized)

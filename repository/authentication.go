@@ -17,18 +17,18 @@ type UserRepository struct {
 }
 
 const (
-	getUserIdQuery = "SELECT id FROM users WHERE username = $1 AND password = $2"
+	getUserIdQuery   = "SELECT id FROM users WHERE username = $1 AND password = $2"
 	getUserSaltQuery = "SELECT salt FROM users WHERE username = $1"
 	insertTokenQuery = "UPDATE users SET token = $1 WHERE id = $2"
 )
 
 func getRandomString() string {
 	const chars = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-  b := make([]byte, 256)
-  for i := range b {
-    b[i] = chars[rand.Intn(len(chars))]
-  }
-  return string(b)
+	b := make([]byte, 256)
+	for i := range b {
+		b[i] = chars[rand.Intn(len(chars))]
+	}
+	return string(b)
 }
 
 func concatPasswordAndSalt(password string, salt string) string {
@@ -37,7 +37,7 @@ func concatPasswordAndSalt(password string, salt string) string {
 	buffer.WriteString(password)
 	buffer.WriteString(salt)
 
-  return buffer.String()
+	return buffer.String()
 }
 
 func hashString(stringPassword string) string {
@@ -59,7 +59,7 @@ func (self UserRepository) LogIn(credentials domain.User) string {
 
 	passwordWithSalt := concatPasswordAndSalt(credentials.Password, userSalt)
 	hashedPassword := hashString(passwordWithSalt)
-	
+
 	err = self.db.QueryRow(getUserIdQuery, credentials.Username, hashedPassword).Scan(&userId)
 	if err != nil {
 		// password incorrect
@@ -73,7 +73,7 @@ func (self UserRepository) LogIn(credentials domain.User) string {
 	return token
 }
 
-func GetUserRepository() UserRepository{
+func GetUserRepository() UserRepository {
 	return UserRepository{
 		db: appcontext.GetDB(),
 	}
