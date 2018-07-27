@@ -35,7 +35,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	userRepo := repository.GetUserRepository()
 	token := userRepo.LogIn(user)
 
-	invalidCredentialsResponse := domain.Response{Status: http.StatusUnauthorized, Message: "Invalid Credentials"}
+	invalidCredentialsResponse := domain.LoginResponse{Status: http.StatusUnauthorized, Message: "Invalid Credentials", Token: ""}
 	validCredentialsResponse := domain.LoginResponse{Status: http.StatusOK, Message: "log_in", Token: token}
 
 	if token == "" {
