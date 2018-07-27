@@ -26,7 +26,7 @@ const (
 	insertHistoryQuery                   = "INSERT INTO history (user_id, namespace_id, predecessor_version, successor_version, created_at) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP) RETURNING id" // user_id, namespace_id, predecessor_version, successor version
 	insertConfigurationChangesQuery      = "INSERT INTO configuration_change VALUES ($1, $2, $3)"                                                                                                    // history_id, key, new_value
 	incrementNamespaceActiveVersionQuery = "UPDATE namespace SET active_version = $1, latest_version = $1 WHERE id = $2"
-	showHistoryQuery                     = "SELECT u.username,n.name,predecessor_version,successor_version,key,new_value FROM history AS h INNER JOIN configuration_change as cfg ON h.id=cfg.history_id INNER JOIN namespace AS n ON h.namespace_id = n.id INNER JOIN users AS u ON h.user_id = u.id WHERE n.id = $1"
+	showHistoryQuery                     = "SELECT u.username,n.name,predecessor_version,successor_version,key,new_value,h.created_at FROM history AS h INNER JOIN configuration_change as cfg ON h.id=cfg.history_id INNER JOIN namespace AS n ON h.namespace_id = n.id INNER JOIN users AS u ON h.user_id = u.id WHERE n.id = $1"
 	getListOfApplicationNamespaceQuery   = "SELECT app.name, n.name FROM application AS app INNER JOIN namespace AS n ON app.id = n.id"
 )
 
@@ -147,9 +147,10 @@ func (self ConfigRepository) ReadHistory(appName string, namespace string) []dom
 		var successorVersion int
 		var key string
 		var value string
+		var createdTime string
 
-		err = rows.Scan(&username, &namespace, &predecessorVersion, &successorVersion, &key, &value)
-		history = append(history, domain.ConfigurationHistory{Username: username, Namespace: namespace, PredecessorVersion: predecessorVersion, SuccessorVersion: successorVersion, Key: key, Value: value})
+		err = rows.Scan(&username, &namespace, &predecessorVersion, &successorVersion, &key, &value, &createdTime)
+		history = append(history, domain.ConfigurationHistory{Username: username, Namespace: namespace, PredecessorVersion: predecessorVersion, SuccessorVersion: successorVersion, Key: key, Value: value, CreatedAt: createdTime})
 	}
 	return history
 }
