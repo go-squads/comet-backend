@@ -17,6 +17,7 @@ type UserRepository struct {
 }
 
 const (
+	tokenLength      = 64
 	getUserIdQuery   = "SELECT id FROM users WHERE username = $1 AND password = $2"
 	getUserSaltQuery = "SELECT salt FROM users WHERE username = $1"
 	insertTokenQuery = "UPDATE users SET token = $1 WHERE id = $2"
@@ -24,7 +25,7 @@ const (
 
 func getRandomString() string {
 	const chars = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	b := make([]byte, 256)
+	b := make([]byte, tokenLength)
 	for i := range b {
 		b[i] = chars[rand.Intn(len(chars))]
 	}
