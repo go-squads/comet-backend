@@ -18,6 +18,7 @@ type ConfigRepository struct {
 const (
 	getAppIdQuery                       = "SELECT id FROM application WHERE name = $1"
 	getNamespaceIdQuery                 = "SELECT id FROM namespace WHERE app_id = $1 AND name = $2"
+	getNamespacesIdOnlyQuery            = "SELECT app_id FROM namespace GROUP BY app_id"
 	getNamespaceIdAndActiveVersionQuery = "SELECT id, active_version FROM namespace WHERE app_id = $1 AND name = $2"
 	getNamespaceIdAndLatestVersionQuery = "SELECT id, latest_version FROM namespace WHERE app_id = $1 AND name = $2"
 	getConfigurationKeyValueQuery       = "SELECT key,value FROM configuration WHERE version = $1 AND namespace_id = $2"
@@ -27,7 +28,8 @@ const (
 	insertConfigurationChangesQuery      = "INSERT INTO configuration_change VALUES ($1, $2, $3)"                                                                                                    // history_id, key, new_value
 	incrementNamespaceActiveVersionQuery = "UPDATE namespace SET active_version = $1, latest_version = $1 WHERE id = $2"
 	showHistoryQuery                     = "SELECT u.username,n.name,predecessor_version,successor_version,key,new_value,h.created_at FROM history AS h INNER JOIN configuration_change as cfg ON h.id=cfg.history_id INNER JOIN namespace AS n ON h.namespace_id = n.id INNER JOIN users AS u ON h.user_id = u.id WHERE n.id = $1"
-	getListOfApplicationNamespaceQuery   = "SELECT app.name, n.name FROM application AS app INNER JOIN namespace AS n ON app.id = n.id"
+	fetchNamespaceQury                   = "SELECT name FROM namespace WHERE app_id = $1"
+	getListOfApplicationNamespaceQuery   = "SELECT app.name FROM application AS app INNER JOIN namespace AS n ON app.id = n.id"
 )
 
 func (self ConfigRepository) GetConfiguration(appName string, namespaceName string, version string) domain.ApplicationConfiguration {
@@ -155,25 +157,59 @@ func (self ConfigRepository) ReadHistory(appName string, namespace string) []dom
 	return history
 }
 
+func (self ConfigRepository) getListOfNamespace(applicationId int) []domain.Namespace {
+	var list []domain.Namespace
+	var rows *sql.Rows
+
+	rows, err = self.db.Query(fetchNamespaceQuery, applicationId)
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+
+	for rows.Next() {
+		var nsName string
+		err = rows.Scan(&nsName)
+		list = append(list, domain.Namespace{Name: nsName})
+	}
+
+	return list
+}
+
 func (self ConfigRepository) GetApplicationNamespace() []domain.ApplicationNamespace {
 	var lsApplication []domain.ApplicationNamespace
+	var lsNamespace []domain.Namespace
+	// var lsNamespaceId []int
+	
+	var nsName string
+
+	row, err := self.db.Query(getNamespacesIdOnlyQuery)
+	if 	err != nil {
+		log.Fatalf(err.Error())
+	}
 
 	rows, err := self.db.Query(getListOfApplicationNamespaceQuery)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
 
+	for row.Next(){
+		var namespace string
+		var applicationId int
+
+		err = row.Scan(&applicationId)
+		namespace = GetListOfNamespace(applicationId)
+		lsNamespace = append(lsNamespace, domain.Namespace{Name: namespace}) 
+	}
+
+
 	for rows.Next() {
 		var applicationName string
-		var namespaceName string
-
-		err = rows.Scan(&applicationName, &namespaceName)
-		lsApplication = append(lsApplication, domain.ApplicationNamespace{ApplicationName: applicationName, Namespace: namespaceName})
+		err = rows.Scan(&applicationName)
+		lsApplication = append(lsApplication, domain.ApplicationNamespace{ApplicationName: applicationName, Namespace: lsNamespace})
 	}
 
 	return lsApplication
 }
-
 func NewConfigurationRepository() ConfigRepository {
 	return ConfigRepository{
 		db: appcontext.GetDB(),
