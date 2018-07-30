@@ -28,5 +28,5 @@ func TestReadConfig(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
-	assert.Equal(t, "[{\"namespaceId\":1,\"version\":1,\"key\":\"PGUSERNAME\",\"value\":\"postgres\"}]\n", w.Body.String())
+	assert.Equal(t, "{\"namespaceId\":0,\"version\":0,\"configurations\":null}\n", w.Body.String())
 }
