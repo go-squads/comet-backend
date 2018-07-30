@@ -3,6 +3,7 @@ package repository
 import (
 	"database/sql"
 	"log"
+	"fmt"
 	"strconv"
 
 	"github.com/go-squads/comet-backend/appcontext"
@@ -28,8 +29,8 @@ const (
 	insertConfigurationChangesQuery      = "INSERT INTO configuration_change VALUES ($1, $2, $3)"                                                                                                    // history_id, key, new_value
 	incrementNamespaceActiveVersionQuery = "UPDATE namespace SET active_version = $1, latest_version = $1 WHERE id = $2"
 	showHistoryQuery                     = "SELECT u.username,n.name,predecessor_version,successor_version,key,new_value,h.created_at FROM history AS h INNER JOIN configuration_change as cfg ON h.id=cfg.history_id INNER JOIN namespace AS n ON h.namespace_id = n.id INNER JOIN users AS u ON h.user_id = u.id WHERE n.id = $1"
-	fetchNamespaceQury                   = "SELECT name FROM namespace WHERE app_id = $1"
-	getListOfApplicationNamespaceQuery   = "SELECT app.name FROM application AS app INNER JOIN namespace AS n ON app.id = n.id"
+	fetchNamespaceQuery                   = "SELECT name FROM namespace WHERE app_id = $1"
+	getListOfApplicationNamespaceQuery   = "SELECT app.name, app.id FROM application AS app INNER JOIN namespace AS n ON app.id = n.id"
 )
 
 func (self ConfigRepository) GetConfiguration(appName string, namespaceName string, version string) domain.ApplicationConfiguration {
@@ -157,55 +158,58 @@ func (self ConfigRepository) ReadHistory(appName string, namespace string) []dom
 	return history
 }
 
-func (self ConfigRepository) getListOfNamespace(applicationId int) []domain.Namespace {
-	var list []domain.Namespace
-	var rows *sql.Rows
+func (self ConfigRepository) GetListOfNamespace(applicationId int) []string {
+	var list []string
+	var row *sql.Rows
 
-	rows, err = self.db.Query(fetchNamespaceQuery, applicationId)
+	row, err = self.db.Query(fetchNamespaceQuery, applicationId)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
 
-	for rows.Next() {
-		var nsName string
-		err = rows.Scan(&nsName)
-		list = append(list, domain.Namespace{Name: nsName})
+	for row.Next() {
+		var name string
+
+		err = row.Scan(&name)
+		list = append(list, name)
+	}
+	return list
+}
+
+func (self ConfigRepository) getListApplicationId() []int{
+	var lsNamespaceId []int
+	var rows *sql.Rows
+
+	rows, err := self.db.Query(getNamespacesIdOnlyQuery)
+	if 	err != nil {
+		log.Fatalf(err.Error())
 	}
 
-	return list
+	for	rows.Next(){
+		var applicationId int
+
+		err = rows.Scan(&applicationId)
+		lsNamespaceId = append(lsNamespaceId, applicationId)
+	}
+	fmt.Println(lsNamespaceId)
+
+	return lsNamespaceId
 }
 
 func (self ConfigRepository) GetApplicationNamespace() []domain.ApplicationNamespace {
 	var lsApplication []domain.ApplicationNamespace
-	var lsNamespace []domain.Namespace
-	// var lsNamespaceId []int
-	
-	var nsName string
-
-	row, err := self.db.Query(getNamespacesIdOnlyQuery)
-	if 	err != nil {
-		log.Fatalf(err.Error())
-	}
 
 	rows, err := self.db.Query(getListOfApplicationNamespaceQuery)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
 
-	for row.Next(){
-		var namespace string
-		var applicationId int
-
-		err = row.Scan(&applicationId)
-		namespace = GetListOfNamespace(applicationId)
-		lsNamespace = append(lsNamespace, domain.Namespace{Name: namespace}) 
-	}
-
-
 	for rows.Next() {
 		var applicationName string
-		err = rows.Scan(&applicationName)
-		lsApplication = append(lsApplication, domain.ApplicationNamespace{ApplicationName: applicationName, Namespace: lsNamespace})
+		var applicationId int
+
+		err = rows.Scan(&applicationName, &applicationId)
+		lsApplication = append(lsApplication, domain.ApplicationNamespace{ApplicationName: applicationName, Namespace: self.GetListOfNamespace(applicationId)  })
 	}
 
 	return lsApplication
