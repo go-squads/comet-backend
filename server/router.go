@@ -13,5 +13,6 @@ func Router() *mux.Router {
 	router.HandleFunc("/history/{app}/{namespace}", handler.ReadHistoryConfiguration).Methods("GET")
 	router.HandleFunc("/application", handler.GetListOfApplication).Methods("GET")
 	router.HandleFunc("/login", handler.LoginHandler).Methods("POST")
+	router.HandleFunc("/configuration/rollback", handler.RollbackConfigurationVersion).Methods("POST")
 	return router
 }
