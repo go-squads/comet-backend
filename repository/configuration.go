@@ -32,7 +32,7 @@ const (
 	showHistoryQuery                     = "SELECT u.username,n.name,predecessor_version,successor_version,key,new_value,h.created_at FROM history AS h INNER JOIN configuration_change as cfg ON h.id=cfg.history_id INNER JOIN namespace AS n ON h.namespace_id = n.id INNER JOIN users AS u ON h.user_id = u.id WHERE n.id = $1"
 	fetchNamespaceQuery                  = "SELECT name FROM namespace WHERE app_id = $1"
 	getListOfApplicationNamespaceQuery   = "SELECT app.name, app.id FROM application AS app INNER JOIN namespace AS n ON app.id = n.id"
-	updateVersionBasedApplicationQuery = "UPDATE namespace SET active_version = $1 WHERE app_id = $2 and name = $3" 
+	updateVersionBasedApplicationQuery   = "UPDATE namespace SET active_version = $1 WHERE app_id = $2 and name = $3"
 )
 
 func (self ConfigRepository) GetConfiguration(appName string, namespaceName string, version string) domain.ApplicationConfiguration {
@@ -221,18 +221,19 @@ func (self ConfigRepository) RollbackVersionNamespace(rollback domain.Configurat
 	var activeVersion int
 	var applicationId int
 	var namespaceId int
+	var historyId int
 
 	_ = self.db.QueryRow(getAppIdQuery, rollback.Appname).Scan(&applicationId)
 	fmt.Println(rollback.Appname)
 	_ = self.db.QueryRow(getNamespaceIdAndActiveVersionQuery, applicationId, rollback.NamespaceName).Scan(&namespaceId, &activeVersion)
 
 	fmt.Println(rollback.NamespaceName)
+
 	if rollback.Version > activeVersion {
-		return domain.Response{Status : http.StatusBadRequest, Message : "Invalid version request"}
+		return domain.Response{Status: http.StatusBadRequest, Message: "Invalid version request"}
 	}
 
-	
-	_, err = self.db.Exec(updateVersionBasedApplicationQuery, rollback.Version, applicationId,rollback.NamespaceName) //version, app_id, namespace_name
+	_, err = self.db.Exec(updateVersionBasedApplicationQuery, rollback.Version, applicationId, rollback.NamespaceName) //version, app_id, namespace_name
 
 	if err != nil {
 		log.Fatalf(err.Error())
@@ -241,7 +242,11 @@ func (self ConfigRepository) RollbackVersionNamespace(rollback domain.Configurat
 	if err != nil {
 		return domain.FailedResponse(err)
 	} else {
-		return domain.Response{Status : http.StatusOK, Message : "Updated"}
+		err = self.db.QueryRow(insertHistoryQuery, 1, namespaceId, activeVersion, rollback.Version).Scan(&historyId)
+		if err != nil {
+			return domain.FailedResponse(err)
+		}
+		return domain.Response{Status: http.StatusOK, Message: "Updated"}
 	}
 
 }
