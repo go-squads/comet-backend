@@ -23,6 +23,7 @@ const (
 	getNamespacesIdOnlyQuery            = "SELECT app_id FROM namespace GROUP BY app_id"
 	getNamespaceIdAndActiveVersionQuery = "SELECT id, active_version FROM namespace WHERE app_id = $1 AND name = $2"
 	getNamespaceIdAndLatestVersionQuery = "SELECT id, latest_version FROM namespace WHERE app_id = $1 AND name = $2"
+	getLatestVersionNamespaceQuery = "SELECT latest_version FROM namespace WHERE app_id = $1 AND name = $2"
 	getConfigurationKeyValueQuery       = "SELECT key,value FROM configuration WHERE version = $1 AND namespace_id = $2"
 
 	insertNewConfigurationQuery          = "INSERT INTO configuration VALUES ($1, $2, $3, $4)"                                                                                                       // namespace_id, version, key, value
@@ -219,6 +220,7 @@ func (self ConfigRepository) GetApplicationNamespace() []domain.ApplicationNames
 
 func (self ConfigRepository) RollbackVersionNamespace(rollback domain.ConfigurationRollback) domain.Response {
 	var activeVersion int
+	var latestVersion int
 	var applicationId int
 	var namespaceId int
 	var historyId int
@@ -229,7 +231,9 @@ func (self ConfigRepository) RollbackVersionNamespace(rollback domain.Configurat
 
 	fmt.Println(rollback.NamespaceName)
 
-	if rollback.Version > activeVersion {
+	_ =self.db.QueryRow(getLatestVersionNamespaceQuery,applicationId,rollback.NamespaceName).Scan(&latestVersion)
+
+	if rollback.Version > latestVersion {
 		return domain.Response{Status: http.StatusBadRequest, Message: "Invalid version request"}
 	}
 
