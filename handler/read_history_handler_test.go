@@ -9,15 +9,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestReadHistoryConfig(t *testing.T){
+func TestReadHistoryConfig(t *testing.T) {
 
 	w := httptest.NewRecorder()
-	r, err := http.NewRequest("GET","/history/comet_test/dev",nil)
+	r, err := http.NewRequest("GET", "/history/comet_test/dev", nil)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
 
-	ReadHistoryConfiguration(w,r)
+	ReadHistoryConfiguration(w, r)
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, "application/json", w.Header().Get("Content-Type"))

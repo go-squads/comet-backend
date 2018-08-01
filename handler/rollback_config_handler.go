@@ -1,11 +1,11 @@
 package handler
 
 import (
-	"net/http"
 	"fmt"
+	"net/http"
 
-	"github.com/go-squads/comet-backend/domain"
 	"encoding/json"
+	"github.com/go-squads/comet-backend/domain"
 	"github.com/go-squads/comet-backend/repository"
 	"log"
 )
@@ -18,7 +18,6 @@ func RollbackConfigurationVersion(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
-
 
 	fmt.Println(&rollbackConfig)
 	rollback := repository.NewConfigurationRepository()
