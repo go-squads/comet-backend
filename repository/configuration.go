@@ -2,7 +2,6 @@ package repository
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -30,10 +29,17 @@ const (
 	insertHistoryQuery                   = "INSERT INTO history (user_id, namespace_id, predecessor_version, successor_version, created_at) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP) RETURNING id" // user_id, namespace_id, predecessor_version, successor version
 	insertConfigurationChangesQuery      = "INSERT INTO configuration_change VALUES ($1, $2, $3)"                                                                                                    // history_id, key, new_value
 	incrementNamespaceActiveVersionQuery = "UPDATE namespace SET active_version = $1, latest_version = $1 WHERE id = $2"
-	showHistoryQuery                     = "SELECT u.username,n.name,predecessor_version,successor_version,key,new_value,h.created_at FROM history AS h INNER JOIN configuration_change as cfg ON h.id=cfg.history_id INNER JOIN namespace AS n ON h.namespace_id = n.id INNER JOIN users AS u ON h.user_id = u.id WHERE n.id = $1"
+	showHistoryQuery                     = "SELECT u.username,n.name,predecessor_version,successor_version,h.created_at FROM history AS h INNER JOIN configuration_change as cfg ON h.id=cfg.history_id INNER JOIN namespace AS n ON h.namespace_id = n.id INNER JOIN users AS u ON h.user_id = u.id WHERE n.id = $1"
 	fetchNamespaceQuery                  = "SELECT name FROM namespace WHERE app_id = $1"
 	getListOfApplicationNamespaceQuery   = "SELECT app.name, app.id FROM application AS app INNER JOIN namespace AS n ON app.id = n.id"
 	updateVersionBasedApplicationQuery   = "UPDATE namespace SET active_version = $1 WHERE app_id = $2 and name = $3"
+
+	/*$1 => namespace_id
+	$2 => version_oldconfigs
+	$e => version_newconfigs
+	*/
+	getDifferentHistoryQuery              = "WITH old_configs AS (SELECT key, value FROM configuration WHERE namespace_id = $1 AND version = $2), new_configs AS (SELECT key, value FROM configuration WHERE namespace_id = $1 AND version = $3) SELECT old_configs.key, new_configs.key, old_configs.value, new_configs.value FROM old_configs FULL OUTER JOIN new_configs ON old_configs.key = new_configs.key;"
+	getPredecessorAndSuccesorVersionQuery = "select predecessor_version, successor_version from history where namespace_id = $1 " //namespace_id
 )
 
 func (self ConfigRepository) GetConfiguration(appName string, namespaceName string, version string) domain.ApplicationConfiguration {
@@ -125,11 +131,106 @@ func (self ConfigRepository) InsertConfiguration(newConfigs domain.Configuration
 	}
 }
 
+func (self ConfigRepository) getListVersion(namespaceId int) []int {
+	var listVersion []int
+	var listRows *sql.Rows
+
+	listRows, err = self.db.Query(getPredecessorAndSuccesorVersionQuery, namespaceId)
+
+	for listRows.Next() {
+		var predecessor int
+		var successor int
+
+		err = listRows.Scan(&predecessor, &successor)
+		listVersion = append(listVersion, predecessor, successor)
+	}
+
+	return listVersion
+}
+
+func (self ConfigRepository) getConfigurationDeletedResponse(namespaceId int, predecessor int, succesor int) []domain.Configuration {
+	var list []domain.Configuration
+	var rows *sql.Rows
+
+	rows, err = self.db.Query(getDifferentHistoryQuery, namespaceId, predecessor, succesor)
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+
+	for rows.Next() {
+		var oldKey string
+		var newKey string
+		var oldConfig string
+		var newConfig string
+
+		err = rows.Scan(&oldKey, &newKey, &oldConfig, &newConfig)
+
+		if newKey == "" {
+			list = append(list, domain.Configuration{Key: oldKey, Value: oldConfig})
+		}
+
+	}
+	return list
+}
+
+func (self ConfigRepository) getConfigurationCreatedResponse(namespaceId int, predecessor int, succesor int) []domain.Configuration {
+	var list []domain.Configuration
+	var rows *sql.Rows
+
+	rows, err = self.db.Query(getDifferentHistoryQuery, namespaceId, predecessor, succesor)
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+
+	for rows.Next() {
+		var oldKey string
+		var newKey string
+		var oldConfig string
+		var newConfig string
+
+		err = rows.Scan(&oldKey, &newKey, &oldConfig, &newConfig)
+
+		if oldKey == "" {
+			list = append(list, domain.Configuration{Key: newKey, Value: newConfig})
+		}
+	}
+	return list
+}
+
+func (self ConfigRepository) getConfigurationChangedResponse(namespaceId int, predecessor int, succesor int) []domain.Configuration {
+	var list []domain.Configuration
+	var rows *sql.Rows
+
+	rows, err = self.db.Query(getDifferentHistoryQuery, namespaceId, predecessor, succesor)
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+
+	for rows.Next() {
+		var oldKey string
+		var newKey string
+		var oldConfig string
+		var newConfig string
+
+		err = rows.Scan(&oldKey, &newKey, &oldConfig, &newConfig)
+		if (oldKey != "") && (newKey != "") && (oldConfig != newConfig) {
+			list = append(list, domain.Configuration{Key: newKey, Value: newConfig})
+		}
+	}
+	return list
+}
+
 func (self ConfigRepository) ReadHistory(appName string, namespace string) []domain.ConfigurationHistory {
 	var history []domain.ConfigurationHistory
 	var applicationId int
 	var namespaceId int
 	var rows *sql.Rows
+
+	var username string
+	var namespaceName string
+	var predecessorVersion int
+	var successorVersion int
+	var createdTime string
 
 	err = self.db.QueryRow(getAppIdQuery, appName).Scan(&applicationId)
 	if err != nil {
@@ -147,16 +248,16 @@ func (self ConfigRepository) ReadHistory(appName string, namespace string) []dom
 	}
 
 	for rows.Next() {
-		var username string
-		var namespace string
-		var predecessorVersion int
-		var successorVersion int
-		var key string
-		var value string
-		var createdTime string
-
-		err = rows.Scan(&username, &namespace, &predecessorVersion, &successorVersion, &key, &value, &createdTime)
-		history = append(history, domain.ConfigurationHistory{Username: username, Namespace: namespace, PredecessorVersion: predecessorVersion, SuccessorVersion: successorVersion, Key: key, Value: value, CreatedAt: createdTime})
+		err = rows.Scan(&username, &namespaceName, &predecessorVersion, &successorVersion, &createdTime)
+		history = append(history, domain.ConfigurationHistory{
+			Username: username,
+			Namespace: namespaceName,
+			PredecessorVersion: predecessorVersion,
+			SuccessorVersion: successorVersion,
+			Deleted: self.getConfigurationDeletedResponse(namespaceId, predecessorVersion, successorVersion),
+			Changed: self.getConfigurationChangedResponse(namespaceId, predecessorVersion, successorVersion),
+			Created: self.getConfigurationCreatedResponse(namespaceId, predecessorVersion, successorVersion),
+			CreatedAt: createdTime})
 	}
 	return history
 }
@@ -194,7 +295,6 @@ func (self ConfigRepository) getListApplicationId() []int {
 		err = rows.Scan(&applicationId)
 		lsNamespaceId = append(lsNamespaceId, applicationId)
 	}
-	fmt.Println(lsNamespaceId)
 
 	return lsNamespaceId
 }
@@ -226,10 +326,8 @@ func (self ConfigRepository) RollbackVersionNamespace(rollback domain.Configurat
 	var historyId int
 
 	_ = self.db.QueryRow(getAppIdQuery, rollback.Appname).Scan(&applicationId)
-	fmt.Println(rollback.Appname)
 	_ = self.db.QueryRow(getNamespaceIdAndActiveVersionQuery, applicationId, rollback.NamespaceName).Scan(&namespaceId, &activeVersion)
 
-	fmt.Println(rollback.NamespaceName)
 
 	_ = self.db.QueryRow(getLatestVersionNamespaceQuery, applicationId, rollback.NamespaceName).Scan(&latestVersion)
 
