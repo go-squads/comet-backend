@@ -1,29 +1,28 @@
 package handler
 
 import (
+	"net/http"
 	"encoding/json"
 	"log"
-	"net/http"
-
 	"github.com/go-squads/comet-backend/domain"
 	"github.com/go-squads/comet-backend/repository"
 )
 
-func InsertConfigurationHandler(w http.ResponseWriter, r *http.Request) {
+func InsertNewApplication(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
-	var newConfigRequest domain.ConfigurationRequest
-
-	err := decoder.Decode(&newConfigRequest)
+	var newAppRequest domain.CreateApplication
+	err := decoder.Decode(&newAppRequest)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
 
 	configurationRepo := repository.NewConfigurationRepository()
 
-	response := configurationRepo.InsertConfiguration(newConfigRequest)
+	response := configurationRepo.CreateApplication(newAppRequest)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
 	json.NewEncoder(w).Encode(response)
 }
+

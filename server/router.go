@@ -14,5 +14,6 @@ func Router() *mux.Router {
 	router.HandleFunc("/application", handler.GetListOfApplication).Methods("GET")
 	router.HandleFunc("/login", handler.LoginHandler).Methods("POST")
 	router.HandleFunc("/configuration/rollback", handler.RollbackConfigurationVersion).Methods("POST")
+	router.HandleFunc("/configuration/create", handler.InsertNewApplication).Methods("POST")
 	return router
 }

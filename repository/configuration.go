@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-squads/comet-backend/appcontext"
 	"github.com/go-squads/comet-backend/domain"
+	"fmt"
 )
 
 var err error
@@ -40,6 +41,9 @@ const (
 	*/
 	getDifferentHistoryQuery              = "WITH old_configs AS (SELECT key, value FROM configuration WHERE namespace_id = $1 AND version = $2), new_configs AS (SELECT key, value FROM configuration WHERE namespace_id = $1 AND version = $3) SELECT old_configs.key, new_configs.key, old_configs.value, new_configs.value FROM old_configs FULL OUTER JOIN new_configs ON old_configs.key = new_configs.key;"
 	getPredecessorAndSuccesorVersionQuery = "select predecessor_version, successor_version from history where namespace_id = $1 " //namespace_id
+	selectApplicationName                 = "SELECT name from application"
+	createNewApplicationQuery             = "INSERT INTO application(name) VALUES ($1)"
+	insertNewNamespaceQuery               = "INSERT INTO namespace(name, app_id, active_version, latest_version) VALUES ($1, $2, $3, $4)"
 )
 
 func (self ConfigRepository) GetConfiguration(appName string, namespaceName string, version string) domain.ApplicationConfiguration {
@@ -250,14 +254,14 @@ func (self ConfigRepository) ReadHistory(appName string, namespace string) []dom
 	for rows.Next() {
 		err = rows.Scan(&username, &namespaceName, &predecessorVersion, &successorVersion, &createdTime)
 		history = append(history, domain.ConfigurationHistory{
-			Username: username,
-			Namespace: namespaceName,
+			Username:           username,
+			Namespace:          namespaceName,
 			PredecessorVersion: predecessorVersion,
-			SuccessorVersion: successorVersion,
-			Deleted: self.getConfigurationDeletedResponse(namespaceId, predecessorVersion, successorVersion),
-			Changed: self.getConfigurationChangedResponse(namespaceId, predecessorVersion, successorVersion),
-			Created: self.getConfigurationCreatedResponse(namespaceId, predecessorVersion, successorVersion),
-			CreatedAt: createdTime})
+			SuccessorVersion:   successorVersion,
+			Deleted:            self.getConfigurationDeletedResponse(namespaceId, predecessorVersion, successorVersion),
+			Changed:            self.getConfigurationChangedResponse(namespaceId, predecessorVersion, successorVersion),
+			Created:            self.getConfigurationCreatedResponse(namespaceId, predecessorVersion, successorVersion),
+			CreatedAt:          createdTime})
 	}
 	return history
 }
@@ -328,7 +332,6 @@ func (self ConfigRepository) RollbackVersionNamespace(rollback domain.Configurat
 	_ = self.db.QueryRow(getAppIdQuery, rollback.Appname).Scan(&applicationId)
 	_ = self.db.QueryRow(getNamespaceIdAndActiveVersionQuery, applicationId, rollback.NamespaceName).Scan(&namespaceId, &activeVersion)
 
-
 	_ = self.db.QueryRow(getLatestVersionNamespaceQuery, applicationId, rollback.NamespaceName).Scan(&latestVersion)
 
 	if rollback.Version > latestVersion {
@@ -350,6 +353,51 @@ func (self ConfigRepository) RollbackVersionNamespace(rollback domain.Configurat
 		}
 		return domain.Response{Status: http.StatusOK, Message: "Updated"}
 	}
+}
+
+func (self ConfigRepository) validateApplicationName(appName string) bool {
+	var rows *sql.Rows
+	isAvailable := true
+
+	fmt.Println(appName)
+
+	rows, err = self.db.Query(selectApplicationName)
+
+	for rows.Next() {
+		var applicationName string
+		err = rows.Scan(&applicationName)
+
+		if applicationName == appName{
+			 isAvailable = false
+		}else {
+			isAvailable = true
+		}
+	}
+	return isAvailable
+}
+
+func (self ConfigRepository) CreateApplication(newApp domain.CreateApplication) domain.Response{
+	var applicationId int
+
+	fmt.Println(newApp.ApplicationName)
+
+	 if self.validateApplicationName(newApp.ApplicationName) == false {
+		return domain.Response{Status: http.StatusNotFound, Message: "Duplicate Application Name"}
+	 }else{
+		_, err = self.db.Query(createNewApplicationQuery,newApp.ApplicationName)
+		 if err != nil {
+			 log.Fatalf(err.Error())
+		 }
+
+		 err = self.db.QueryRow(getAppIdQuery,newApp.ApplicationName).Scan(&applicationId)
+		 if err != nil {
+			 log.Fatalf(err.Error())
+		 }
+
+		 _,err = self.db.Query(insertNewNamespaceQuery,newApp.NamespaceName,applicationId,1,1)
+
+		 return domain.Response{Status: http.StatusOK,Message:"Inserted New Application"}
+	 }
 
 }
 
