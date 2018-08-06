@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"fmt"
 	"github.com/go-squads/comet-backend/appcontext"
 	"github.com/go-squads/comet-backend/domain"
 )
@@ -44,6 +43,7 @@ const (
 	selectApplicationName                 = "SELECT name from application"
 	createNewApplicationQuery             = "INSERT INTO application(name) VALUES ($1)"
 	insertNewNamespaceQuery               = "INSERT INTO namespace(name, app_id, active_version, latest_version) VALUES ($1, $2, $3, $4)"
+	checkNamespaceQuery                   = "SELECT name FROM namespace WHERE app_id = $1"
 )
 
 func (self ConfigRepository) GetConfiguration(appName string, namespaceName string, version string) domain.ApplicationConfiguration {
@@ -353,50 +353,6 @@ func (self ConfigRepository) RollbackVersionNamespace(rollback domain.Configurat
 		}
 		return domain.Response{Status: http.StatusOK, Message: "Updated"}
 	}
-}
-
-func (self ConfigRepository) validateApplicationName(appName string) bool {
-	var rows *sql.Rows
-	isAvailable := true
-
-	rows, err = self.db.Query(selectApplicationName)
-
-	for rows.Next() {
-		var applicationName string
-		err = rows.Scan(&applicationName)
-
-		if applicationName == appName {
-			isAvailable = false
-		} else {
-			isAvailable = true
-		}
-	}
-	fmt.Println(isAvailable)
-	return isAvailable
-}
-
-func (self ConfigRepository) CreateApplication(newApp domain.CreateApplication) domain.Response {
-
-	if self.validateApplicationName(newApp.ApplicationsName) == false {
-		return domain.Response{Status: http.StatusBadRequest, Message: "Duplicate Application Name"}
-	} else {
-		var applicationId int
-		_, err = self.db.Query(createNewApplicationQuery, newApp.ApplicationsName)
-		if err != nil {
-			log.Fatalf(err.Error())
-		}
-
-		err = self.db.QueryRow(getAppIdQuery, newApp.ApplicationsName).Scan(&applicationId)
-		if err != nil {
-			log.Fatalf(err.Error())
-		}
-
-		_, err = self.db.Query(insertNewNamespaceQuery, newApp.NamespaceName, applicationId, 1, 1)
-
-		fmt.Print(applicationId)
-		return domain.Response{Status: http.StatusOK, Message: "Inserted New Application"}
-	}
-
 }
 
 func NewConfigurationRepository() ConfigRepository {

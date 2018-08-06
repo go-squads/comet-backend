@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/go-squads/comet-backend/domain"
 	"github.com/go-squads/comet-backend/repository"
 	"log"
@@ -17,8 +16,7 @@ func InsertNewApplication(w http.ResponseWriter, r *http.Request) {
 		log.Fatalf(err.Error())
 	}
 
-	fmt.Println(newAppRequest)
-	configurationRepo := repository.NewConfigurationRepository()
+	configurationRepo := repository.NewApplicationRepository()
 
 	response := configurationRepo.CreateApplication(newAppRequest)
 
