@@ -8,12 +8,12 @@ import (
 func Router() *mux.Router {
 	router := mux.NewRouter()
 	router.HandleFunc("/ping", handler.PingHandler).Methods("GET")
-	router.HandleFunc("/configuration/{app}/{namespace}", handler.ReadConfigurationHandler).Methods("GET")
 	router.HandleFunc("/configuration", handler.InsertConfigurationHandler).Methods("POST")
+	router.HandleFunc("/configuration/rollback", handler.RollbackConfigurationVersion).Methods("POST")
+	router.HandleFunc("/configuration/{app}/{namespace}", handler.ReadConfigurationHandler).Methods("GET")
 	router.HandleFunc("/configuration/history/{app}/{namespace}", handler.ReadHistoryConfiguration).Methods("GET")
 	router.HandleFunc("/application", handler.GetListOfApplication).Methods("GET")
+	router.HandleFunc("/application/create", handler.InsertNewApplication).Methods("POST")
 	router.HandleFunc("/login", handler.LoginHandler).Methods("POST")
-	router.HandleFunc("/configuration/rollback", handler.RollbackConfigurationVersion).Methods("POST")
-	router.HandleFunc("/configuration/create", handler.InsertNewApplication).Methods("POST")
 	return router
 }

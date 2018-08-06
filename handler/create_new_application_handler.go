@@ -1,11 +1,12 @@
 package handler
 
 import (
-	"net/http"
 	"encoding/json"
-	"log"
+	"fmt"
 	"github.com/go-squads/comet-backend/domain"
 	"github.com/go-squads/comet-backend/repository"
+	"log"
+	"net/http"
 )
 
 func InsertNewApplication(w http.ResponseWriter, r *http.Request) {
@@ -16,6 +17,7 @@ func InsertNewApplication(w http.ResponseWriter, r *http.Request) {
 		log.Fatalf(err.Error())
 	}
 
+	fmt.Println(newAppRequest)
 	configurationRepo := repository.NewConfigurationRepository()
 
 	response := configurationRepo.CreateApplication(newAppRequest)
@@ -25,4 +27,3 @@ func InsertNewApplication(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(response)
 }
-

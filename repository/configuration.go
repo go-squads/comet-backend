@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"strconv"
 
+	"fmt"
 	"github.com/go-squads/comet-backend/appcontext"
 	"github.com/go-squads/comet-backend/domain"
-	"fmt"
 )
 
 var err error
@@ -359,45 +359,43 @@ func (self ConfigRepository) validateApplicationName(appName string) bool {
 	var rows *sql.Rows
 	isAvailable := true
 
-	fmt.Println(appName)
-
 	rows, err = self.db.Query(selectApplicationName)
 
 	for rows.Next() {
 		var applicationName string
 		err = rows.Scan(&applicationName)
 
-		if applicationName == appName{
-			 isAvailable = false
-		}else {
+		if applicationName == appName {
+			isAvailable = false
+		} else {
 			isAvailable = true
 		}
 	}
+	fmt.Println(isAvailable)
 	return isAvailable
 }
 
-func (self ConfigRepository) CreateApplication(newApp domain.CreateApplication) domain.Response{
-	var applicationId int
+func (self ConfigRepository) CreateApplication(newApp domain.CreateApplication) domain.Response {
 
-	fmt.Println(newApp.ApplicationName)
+	if self.validateApplicationName(newApp.ApplicationsName) == false {
+		return domain.Response{Status: http.StatusBadRequest, Message: "Duplicate Application Name"}
+	} else {
+		var applicationId int
+		_, err = self.db.Query(createNewApplicationQuery, newApp.ApplicationsName)
+		if err != nil {
+			log.Fatalf(err.Error())
+		}
 
-	 if self.validateApplicationName(newApp.ApplicationName) == false {
-		return domain.Response{Status: http.StatusNotFound, Message: "Duplicate Application Name"}
-	 }else{
-		_, err = self.db.Query(createNewApplicationQuery,newApp.ApplicationName)
-		 if err != nil {
-			 log.Fatalf(err.Error())
-		 }
+		err = self.db.QueryRow(getAppIdQuery, newApp.ApplicationsName).Scan(&applicationId)
+		if err != nil {
+			log.Fatalf(err.Error())
+		}
 
-		 err = self.db.QueryRow(getAppIdQuery,newApp.ApplicationName).Scan(&applicationId)
-		 if err != nil {
-			 log.Fatalf(err.Error())
-		 }
+		_, err = self.db.Query(insertNewNamespaceQuery, newApp.NamespaceName, applicationId, 1, 1)
 
-		 _,err = self.db.Query(insertNewNamespaceQuery,newApp.NamespaceName,applicationId,1,1)
-
-		 return domain.Response{Status: http.StatusOK,Message:"Inserted New Application"}
-	 }
+		fmt.Print(applicationId)
+		return domain.Response{Status: http.StatusOK, Message: "Inserted New Application"}
+	}
 
 }
 
