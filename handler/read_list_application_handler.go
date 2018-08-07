@@ -17,12 +17,6 @@ func GetListOfApplication(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Authorization",header)
-	//if header == "" {
-	//	w.WriteHeader(http.StatusUnauthorized)
-	//	json.NewEncoder(w).Encode(domain.Response{Status: http.StatusUnauthorized, Message: "Unauthorized"})
-	//}else{
-	//	w.WriteHeader(http.StatusOK)
-	//}
 	json.NewEncoder(w).Encode(application)
 }
 
