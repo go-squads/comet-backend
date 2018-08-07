@@ -5,12 +5,25 @@ import (
 	"net/http"
 
 	"github.com/go-squads/comet-backend/repository"
+	"fmt"
+	"github.com/go-squads/comet-backend/domain"
 )
 
 func GetListOfApplication(w http.ResponseWriter, r *http.Request) {
-	listApplication := repository.NewConfigurationRepository()
+	listApplication := repository.NewApplicationRepository()
 	application := listApplication.GetApplicationNamespace()
+	fmt.Println(listApplication)
+	header :=  r.Header.Get("Authorization")
+	fmt.Println(header)
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(application)
+	w.Header().Set("Authorization",header)
+	if header == "" {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(domain.Response{Status: http.StatusUnauthorized, Message: "Unauthorized"})
+	}else{
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(application)
+	}
 }
+

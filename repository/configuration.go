@@ -266,24 +266,6 @@ func (self ConfigRepository) ReadHistory(appName string, namespace string) []dom
 	return history
 }
 
-func (self ConfigRepository) GetListOfNamespace(applicationId int) []string {
-	var list []string
-	var row *sql.Rows
-
-	row, err = self.db.Query(fetchNamespaceQuery, applicationId)
-	if err != nil {
-		log.Fatalf(err.Error())
-	}
-
-	for row.Next() {
-		var name string
-
-		err = row.Scan(&name)
-		list = append(list, name)
-	}
-	return list
-}
-
 func (self ConfigRepository) getListApplicationId() []int {
 	var lsNamespaceId []int
 	var rows *sql.Rows
@@ -303,24 +285,7 @@ func (self ConfigRepository) getListApplicationId() []int {
 	return lsNamespaceId
 }
 
-func (self ConfigRepository) GetApplicationNamespace() []domain.ApplicationNamespace {
-	var lsApplication []domain.ApplicationNamespace
 
-	rows, err := self.db.Query(getListOfApplicationNamespaceQuery)
-	if err != nil {
-		log.Fatalf(err.Error())
-	}
-
-	for rows.Next() {
-		var applicationName string
-		var applicationId int
-
-		err = rows.Scan(&applicationName, &applicationId)
-		lsApplication = append(lsApplication, domain.ApplicationNamespace{ApplicationName: applicationName, Namespace: self.GetListOfNamespace(applicationId)})
-	}
-
-	return lsApplication
-}
 
 func (self ConfigRepository) RollbackVersionNamespace(rollback domain.ConfigurationRollback) domain.Response {
 	var activeVersion int

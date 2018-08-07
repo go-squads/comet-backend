@@ -93,6 +93,44 @@ func (self ApplicationRepository) CreateNewNamespace(appName string, namespaceNa
 	}
 }
 
+func (self ApplicationRepository) GetListOfNamespace(applicationId int) []string {
+	var list []string
+	var row *sql.Rows
+
+	row, err = self.db.Query(fetchNamespaceQuery, applicationId)
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+
+	for row.Next() {
+		var name string
+
+		err = row.Scan(&name)
+		list = append(list, name)
+	}
+	return list
+}
+
+func (self ApplicationRepository) GetApplicationNamespace() []domain.ApplicationNamespace {
+	var lsApplication []domain.ApplicationNamespace
+
+	rows, err := self.db.Query(getListOfApplicationNamespaceQuery)
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+
+	for rows.Next() {
+		var applicationName string
+		var applicationId int
+
+		err = rows.Scan(&applicationName, &applicationId)
+		lsApplication = append(lsApplication, domain.ApplicationNamespace{ApplicationName: applicationName, Namespace: self.GetListOfNamespace(applicationId)})
+	}
+
+	fmt.Println(lsApplication)
+	return lsApplication
+}
+
 func NewApplicationRepository() ApplicationRepository {
 	return ApplicationRepository{
 		db: appcontext.GetDB(),
