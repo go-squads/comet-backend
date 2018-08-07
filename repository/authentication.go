@@ -11,6 +11,7 @@ import (
 	"github.com/go-squads/comet-backend/appcontext"
 	"github.com/go-squads/comet-backend/domain"
 	"log"
+	"time"
 )
 
 type UserRepository struct {
@@ -25,6 +26,20 @@ const (
 	checkTokenAvailableQuery = "SELECT token FROM users"
 	userRoleQuery            = "SELECT role FROM users WHERE token = $1"
 )
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
+
+func randomStringGenerator() string{
+	var letter = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+	strGen := make([]rune,tokenLength)
+	for i := range strGen{
+		strGen[i] = letter[rand.Intn(len(letter))]
+	}
+	return string(strGen)
+}
 
 func getRandomString() string {
 	const chars = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -70,7 +85,7 @@ func (self UserRepository) LogIn(credentials domain.User) string {
 		return ""
 	}
 
-	token := getRandomString()
+	token := randomStringGenerator()
 
 	self.db.Exec(insertTokenQuery, token, userId)
 
