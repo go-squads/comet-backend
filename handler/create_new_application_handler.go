@@ -10,6 +10,8 @@ import (
 
 func InsertNewApplication(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
+	header :=  r.Header.Get("Authorization")
+
 	var newAppRequest domain.CreateApplication
 	err := decoder.Decode(&newAppRequest)
 	if err != nil {
@@ -21,6 +23,7 @@ func InsertNewApplication(w http.ResponseWriter, r *http.Request) {
 	response := configurationRepo.CreateApplication(newAppRequest)
 
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Authorization",header)
 	w.WriteHeader(http.StatusOK)
 
 	json.NewEncoder(w).Encode(response)

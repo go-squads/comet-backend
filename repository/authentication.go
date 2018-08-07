@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-squads/comet-backend/appcontext"
 	"github.com/go-squads/comet-backend/domain"
+	"log"
 )
 
 type UserRepository struct {
@@ -17,10 +18,12 @@ type UserRepository struct {
 }
 
 const (
-	tokenLength      = 64
-	getUserIdQuery   = "SELECT id FROM users WHERE username = $1 AND password = $2"
-	getUserSaltQuery = "SELECT salt FROM users WHERE username = $1"
-	insertTokenQuery = "UPDATE users SET token = $1 WHERE id = $2"
+	tokenLength              = 64
+	getUserIdQuery           = "SELECT id FROM users WHERE username = $1 AND password = $2"
+	getUserSaltQuery         = "SELECT salt FROM users WHERE username = $1"
+	insertTokenQuery         = "UPDATE users SET token = $1 WHERE id = $2"
+	checkTokenAvailableQuery = "SELECT token FROM users"
+	userRoleQuery            = "SELECT role FROM users WHERE token = $1"
 )
 
 func getRandomString() string {
@@ -72,6 +75,40 @@ func (self UserRepository) LogIn(credentials domain.User) string {
 	self.db.Exec(insertTokenQuery, token, userId)
 
 	return token
+}
+
+func (self UserRepository) ValidateUserToken(token string) bool {
+	var dbToken string
+	var rows *sql.Rows
+	isValidate := true
+
+	rows, err = self.db.Query(checkTokenAvailableQuery)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	for rows.Next() {
+		err = rows.Scan(&dbToken)
+		if token == dbToken {
+			isValidate = true
+		} else if token == "" {
+			isValidate = false
+		} else if token != dbToken {
+			isValidate = false
+		}
+	}
+
+	return isValidate
+}
+
+func (self UserRepository) GetUserRoleBase(token string) string {
+	var role string
+
+	err = self.db.QueryRow(userRoleQuery, token).Scan(&role)
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+	return role
 }
 
 func GetUserRepository() UserRepository {

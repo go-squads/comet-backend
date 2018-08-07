@@ -11,12 +11,14 @@ import (
 func ReadConfigurationHandler(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	version := r.FormValue("version")
+	header :=  r.Header.Get("Authorization")
 
 	configurationRepo := repository.NewConfigurationRepository()
 
 	appCfg := configurationRepo.GetConfiguration(params["app"], params["namespace"], version)
 
 	w.Header().Set("Content-type", "application/json")
+	w.Header().Set("Authorization",header)
 	w.WriteHeader(http.StatusOK)
 
 	json.NewEncoder(w).Encode(appCfg)
