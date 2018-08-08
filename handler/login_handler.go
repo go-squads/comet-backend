@@ -8,10 +8,7 @@ import (
 
 	"github.com/go-squads/comet-backend/domain"
 	"github.com/go-squads/comet-backend/repository"
-)
-
-const (
-	invalidCredentialsString = "Invalid Credentials"
+	"fmt"
 )
 
 func addCookie(w http.ResponseWriter, name string, value string) {
@@ -33,10 +30,12 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userRepo := repository.GetUserRepository()
-	token := userRepo.LogIn(user)
+	token, fullName, role := userRepo.LogIn(user)
 
-	invalidCredentialsResponse := domain.LoginResponse{Status: http.StatusUnauthorized, Message: "Invalid Credentials", Token: ""}
-	validCredentialsResponse := domain.LoginResponse{Status: http.StatusOK, Message: "log_in", Token: token}
+	fmt.Println(fullName+" and "+role)
+
+	invalidCredentialsResponse := domain.LoginResponse{Status: http.StatusUnauthorized, Fullname: "", RoleBased: "", Message: "Invalid Credentials", Token: ""}
+	validCredentialsResponse := domain.LoginResponse{Status: http.StatusOK,Fullname: fullName, RoleBased: role, Message: "log_in", Token: token}
 
 	if token == "" {
 		w.WriteHeader(http.StatusUnauthorized)
