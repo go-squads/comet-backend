@@ -12,6 +12,7 @@ import (
 	"github.com/go-squads/comet-backend/domain"
 	"log"
 	"time"
+	"fmt"
 )
 
 type UserRepository struct {
@@ -66,14 +67,16 @@ func hashString(stringPassword string) string {
 	return hashedPassword
 }
 
-func (self UserRepository) LogIn(credentials domain.User) string {
+func (self UserRepository) LogIn(credentials domain.User) (string,string,string) {
 	var userId int
+	var fullname string
+	var userRole string
 	var userSalt string
 
 	err = self.db.QueryRow(getUserSaltQuery, credentials.Username).Scan(&userSalt)
 	if err != nil {
 		// user does not exist
-		return ""
+		return "","",""
 	}
 
 	passwordWithSalt := concatPasswordAndSalt(credentials.Password, userSalt)
@@ -82,14 +85,18 @@ func (self UserRepository) LogIn(credentials domain.User) string {
 	err = self.db.QueryRow(getUserIdQuery, credentials.Username, hashedPassword).Scan(&userId)
 	if err != nil {
 		// password incorrect
-		return ""
+		return "","",""
 	}
 
 	token := randomStringGenerator()
 
 	self.db.Exec(insertTokenQuery, token, userId)
+	err = self.db.QueryRow("SELECT name,role FROM users WHERE id = $1 ",userId).Scan(&fullname,&userRole)
+	if err != nil {
+		log.Println(err.Error())
+	}
 
-	return token
+	return token,fullname,userRole
 }
 
 func (self UserRepository) ValidateUserToken(token string) bool {
@@ -113,16 +120,25 @@ func (self UserRepository) ValidateUserToken(token string) bool {
 		}
 	}
 
+	fmt.Println(isValidate)
 	return isValidate
 }
 
-func (self UserRepository) GetUserRoleBase(token string) string {
+func (self UserRepository) SetUserRoleBased(token string){
+	_,err = self.db.Exec("SET ROLE "+self.getUserRoleBase(token))
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+
+func (self UserRepository) getUserRoleBase(token string) string {
 	var role string
 
 	err = self.db.QueryRow(userRoleQuery, token).Scan(&role)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
+	fmt.Println(role)
 	return role
 }
 
