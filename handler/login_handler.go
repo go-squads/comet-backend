@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"time"
 
+	"fmt"
 	"github.com/go-squads/comet-backend/domain"
 	"github.com/go-squads/comet-backend/repository"
-	"fmt"
 )
 
 func addCookie(w http.ResponseWriter, name string, value string) {
@@ -32,10 +32,10 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	userRepo := repository.GetUserRepository()
 	token, fullName, role := userRepo.LogIn(user)
 
-	fmt.Println(fullName+" and "+role)
+	fmt.Println(fullName + " and " + role)
 
 	invalidCredentialsResponse := domain.LoginResponse{Status: http.StatusUnauthorized, Fullname: "", RoleBased: "", Message: "Invalid Credentials", Token: ""}
-	validCredentialsResponse := domain.LoginResponse{Status: http.StatusOK,Fullname: fullName, RoleBased: role, Message: "log_in", Token: token}
+	validCredentialsResponse := domain.LoginResponse{Status: http.StatusOK, Fullname: fullName, RoleBased: role, Message: "log_in", Token: token}
 
 	if token == "" {
 		w.WriteHeader(http.StatusUnauthorized)

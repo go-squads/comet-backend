@@ -11,10 +11,10 @@ import (
 func ReadHistoryConfiguration(w http.ResponseWriter, r *http.Request) {
 	historyRepo := repository.NewConfigurationRepository()
 	params := mux.Vars(r)
-	header :=  r.Header.Get("Authorization")
+	header := r.Header.Get("Authorization")
 
-	history := historyRepo.ReadHistory(params["app"], params["namespace"])
+	history := historyRepo.ReadHistory(params["app"], params["namespace"],header)
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Authorization",header)
+	w.Header().Set("Authorization", header)
 	json.NewEncoder(w).Encode(history)
 }

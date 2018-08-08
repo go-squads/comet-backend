@@ -8,11 +8,11 @@ import (
 	"io"
 	"math/rand"
 
+	"fmt"
 	"github.com/go-squads/comet-backend/appcontext"
 	"github.com/go-squads/comet-backend/domain"
 	"log"
 	"time"
-	"fmt"
 )
 
 type UserRepository struct {
@@ -32,11 +32,11 @@ func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
-func randomStringGenerator() string{
+func randomStringGenerator() string {
 	var letter = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
-	strGen := make([]rune,tokenLength)
-	for i := range strGen{
+	strGen := make([]rune, tokenLength)
+	for i := range strGen {
 		strGen[i] = letter[rand.Intn(len(letter))]
 	}
 	return string(strGen)
@@ -67,7 +67,7 @@ func hashString(stringPassword string) string {
 	return hashedPassword
 }
 
-func (self UserRepository) LogIn(credentials domain.User) (string,string,string) {
+func (self UserRepository) LogIn(credentials domain.User) (string, string, string) {
 	var userId int
 	var fullname string
 	var userRole string
@@ -76,7 +76,7 @@ func (self UserRepository) LogIn(credentials domain.User) (string,string,string)
 	err = self.db.QueryRow(getUserSaltQuery, credentials.Username).Scan(&userSalt)
 	if err != nil {
 		// user does not exist
-		return "","",""
+		return "", "", ""
 	}
 
 	passwordWithSalt := concatPasswordAndSalt(credentials.Password, userSalt)
@@ -85,18 +85,18 @@ func (self UserRepository) LogIn(credentials domain.User) (string,string,string)
 	err = self.db.QueryRow(getUserIdQuery, credentials.Username, hashedPassword).Scan(&userId)
 	if err != nil {
 		// password incorrect
-		return "","",""
+		return "", "", ""
 	}
 
 	token := randomStringGenerator()
 
 	self.db.Exec(insertTokenQuery, token, userId)
-	err = self.db.QueryRow("SELECT name,role FROM users WHERE id = $1 ",userId).Scan(&fullname,&userRole)
+	err = self.db.QueryRow("SELECT name,role FROM users WHERE id = $1 ", userId).Scan(&fullname, &userRole)
 	if err != nil {
 		log.Println(err.Error())
 	}
 
-	return token,fullname,userRole
+	return token, fullname, userRole
 }
 
 func (self UserRepository) ValidateUserToken(token string) bool {
@@ -124,8 +124,8 @@ func (self UserRepository) ValidateUserToken(token string) bool {
 	return isValidate
 }
 
-func (self UserRepository) SetUserRoleBased(token string){
-	_,err = self.db.Exec("SET ROLE "+self.getUserRoleBase(token))
+func (self UserRepository) SetUserRoleBased(token string) {
+	_, err = self.db.Exec("SET ROLE " + self.getUserRoleBase(token))
 	if err != nil {
 		fmt.Println(err)
 	}

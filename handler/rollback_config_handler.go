@@ -12,7 +12,7 @@ import (
 
 func RollbackConfigurationVersion(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
-	header :=  r.Header.Get("Authorization")
+	header := r.Header.Get("Authorization")
 	var rollbackConfig domain.ConfigurationRollback
 
 	err := decoder.Decode(&rollbackConfig)
@@ -22,10 +22,10 @@ func RollbackConfigurationVersion(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println(&rollbackConfig)
 	rollback := repository.NewConfigurationRepository()
-	rollbackResponse := rollback.RollbackVersionNamespace(rollbackConfig)
+	rollbackResponse := rollback.RollbackVersionNamespace(rollbackConfig,header)
 
 	w.Header().Set("Content-type", "application/json")
-	w.Header().Set("Authorization",header)
+	w.Header().Set("Authorization", header)
 	w.WriteHeader(http.StatusOK)
 
 	json.NewEncoder(w).Encode(rollbackResponse)

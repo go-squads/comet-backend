@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-squads/comet-backend/appcontext"
 	"github.com/go-squads/comet-backend/domain"
+	"fmt"
 )
 
 var err error
@@ -46,7 +47,24 @@ const (
 	checkNamespaceQuery                   = "SELECT name FROM namespace WHERE app_id = $1"
 )
 
-func (self ConfigRepository) GetConfiguration(appName string, namespaceName string, version string) domain.ApplicationConfiguration {
+func (self ConfigRepository) setRoleBased(token string) {
+	_, err := self.db.Exec("SET ROLE " + self.getUserRoleBased(token))
+	if err != nil {
+		log.Println(err.Error() + " after set role in config")
+	}
+}
+
+func (self ConfigRepository) getUserRoleBased(token string) string {
+	var userRole string
+	err := self.db.QueryRow(checkRoleBaseQuery, token).Scan(&userRole)
+	if err != nil {
+		fmt.Print(err.Error())
+	}
+	fmt.Println(userRole)
+	return userRole
+}
+
+func (self ConfigRepository) GetConfiguration(appName string, namespaceName string, version string, token string) domain.ApplicationConfiguration {
 	var appConfig domain.ApplicationConfiguration
 	var cfg []domain.Configuration
 	var activeVersion int
@@ -82,13 +100,15 @@ func (self ConfigRepository) GetConfiguration(appName string, namespaceName stri
 	return appConfig
 }
 
-func (self ConfigRepository) InsertConfiguration(newConfigs domain.ConfigurationRequest) domain.Response {
+func (self ConfigRepository) InsertConfiguration(newConfigs domain.ConfigurationRequest, token string) domain.Response {
 	var latestVersion int
 	var activeVersion int
 	var newVersion int
 	var applicationId int
 	var historyId int
 	var namespaceId int
+
+	self.setRoleBased(token)
 
 	err = self.db.QueryRow(getAppIdQuery, newConfigs.AppName).Scan(&applicationId)
 	if err != nil {
@@ -109,29 +129,30 @@ func (self ConfigRepository) InsertConfiguration(newConfigs domain.Configuration
 
 	err = self.db.QueryRow(insertHistoryQuery, 1, namespaceId, activeVersion, newVersion).Scan(&historyId)
 	if err != nil {
-		return domain.FailedResponse(err)
-	}
-
-	for _, config := range newConfigs.Data {
-		key := config.Key
-		value := config.Value
-
-		_, err = self.db.Exec(insertNewConfigurationQuery, namespaceId, newVersion, key, value)
-		if err != nil {
-			return domain.FailedResponse(err)
-		}
-
-		_, err = self.db.Exec(insertConfigurationChangesQuery, historyId, key, value)
-		if err != nil {
-			return domain.FailedResponse(err)
-		}
-	}
-
-	_, err := self.db.Exec(incrementNamespaceActiveVersionQuery, newVersion, namespaceId)
-	if err != nil {
-		return domain.FailedResponse(err)
+		return domain.Response{Status: http.StatusForbidden, Message: "Action forbidden"}
 	} else {
-		return domain.SuccessResponse()
+
+		for _, config := range newConfigs.Data {
+			key := config.Key
+			value := config.Value
+
+			_, err = self.db.Exec(insertNewConfigurationQuery, namespaceId, newVersion, key, value)
+			if err != nil {
+				return domain.FailedResponse(err)
+			}
+
+			_, err = self.db.Exec(insertConfigurationChangesQuery, historyId, key, value)
+			if err != nil {
+				return domain.FailedResponse(err)
+			}
+		}
+
+		_, err := self.db.Exec(incrementNamespaceActiveVersionQuery, newVersion, namespaceId)
+		if err != nil {
+			return domain.FailedResponse(err)
+		} else {
+			return domain.SuccessResponse()
+		}
 	}
 }
 
@@ -224,7 +245,7 @@ func (self ConfigRepository) getConfigurationChangedResponse(namespaceId int, pr
 	return list
 }
 
-func (self ConfigRepository) ReadHistory(appName string, namespace string) []domain.ConfigurationHistory {
+func (self ConfigRepository) ReadHistory(appName string, namespace string, token string) []domain.ConfigurationHistory {
 	var history []domain.ConfigurationHistory
 	var applicationId int
 	var namespaceId int
@@ -235,6 +256,7 @@ func (self ConfigRepository) ReadHistory(appName string, namespace string) []dom
 	var predecessorVersion int
 	var successorVersion int
 	var createdTime string
+
 
 	err = self.db.QueryRow(getAppIdQuery, appName).Scan(&applicationId)
 	if err != nil {
@@ -285,14 +307,14 @@ func (self ConfigRepository) getListApplicationId() []int {
 	return lsNamespaceId
 }
 
-
-
-func (self ConfigRepository) RollbackVersionNamespace(rollback domain.ConfigurationRollback) domain.Response {
+func (self ConfigRepository) RollbackVersionNamespace(rollback domain.ConfigurationRollback, token string) domain.Response {
 	var activeVersion int
 	var latestVersion int
 	var applicationId int
 	var namespaceId int
 	var historyId int
+
+	self.setRoleBased(token)
 
 	_ = self.db.QueryRow(getAppIdQuery, rollback.Appname).Scan(&applicationId)
 	_ = self.db.QueryRow(getNamespaceIdAndActiveVersionQuery, applicationId, rollback.NamespaceName).Scan(&namespaceId, &activeVersion)
@@ -304,17 +326,13 @@ func (self ConfigRepository) RollbackVersionNamespace(rollback domain.Configurat
 	}
 
 	_, err = self.db.Exec(updateVersionBasedApplicationQuery, rollback.Version, applicationId, rollback.NamespaceName) //version, app_id, namespace_name
-
 	if err != nil {
-		log.Fatalf(err.Error())
-	}
-
-	if err != nil {
-		return domain.FailedResponse(err)
+		log.Println(err.Error() + " after rollback")
+		return domain.Response{Status: http.StatusForbidden, Message: "Action Forbidden"}
 	} else {
 		err = self.db.QueryRow(insertHistoryQuery, 1, namespaceId, activeVersion, rollback.Version).Scan(&historyId)
 		if err != nil {
-			return domain.FailedResponse(err)
+			log.Println(err.Error())
 		}
 		return domain.Response{Status: http.StatusOK, Message: "Updated"}
 	}

@@ -11,7 +11,7 @@ import (
 
 func InsertConfigurationHandler(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
-	header :=  r.Header.Get("Authorization")
+	header := r.Header.Get("Authorization")
 
 	var newConfigRequest domain.ConfigurationRequest
 
@@ -22,10 +22,10 @@ func InsertConfigurationHandler(w http.ResponseWriter, r *http.Request) {
 
 	configurationRepo := repository.NewConfigurationRepository()
 
-	response := configurationRepo.InsertConfiguration(newConfigRequest)
+	response := configurationRepo.InsertConfiguration(newConfigRequest,header)
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Authorization",header)
+	w.Header().Set("Authorization", header)
 	w.WriteHeader(http.StatusOK)
 
 	json.NewEncoder(w).Encode(response)
