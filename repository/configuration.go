@@ -100,7 +100,8 @@ func (self ConfigRepository) GetConfiguration(appName string, namespaceName stri
 	return appConfig
 }
 
-func (self ConfigRepository) GetLatestConfiguration(appName string, namespaceName string, token string) []domain.Configuration {
+func (self ConfigRepository) GetLatestConfiguration(appName string, namespaceName string, token string) domain.ApplicationConfiguration {
+	var appConfig domain.ApplicationConfiguration
 	var cfg []domain.Configuration
 	var activeVersion int
 	var applicationId int
@@ -123,7 +124,8 @@ func (self ConfigRepository) GetLatestConfiguration(appName string, namespaceNam
 		err = rows.Scan(&key, &value)
 		cfg = append(cfg, domain.Configuration{Key: key, Value: value})
 	}
-	return cfg
+	appConfig = domain.ApplicationConfiguration{ Version: activeVersion, Configurations: cfg}
+	return appConfig
 }
 
 
