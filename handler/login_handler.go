@@ -34,16 +34,11 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println(fullName + " and " + role)
 
-	invalidCredentialsResponse := domain.LoginResponse{Status: http.StatusUnauthorized, Fullname: "", RoleBased: "", Message: "Invalid Credentials", Token: ""}
+	//invalidCredentialsResponse := domain.LoginResponse{Status: http.StatusUnauthorized, Fullname: "", RoleBased: "", Message: "Invalid Credentials", Token: ""}
 	validCredentialsResponse := domain.LoginResponse{Status: http.StatusOK, Fullname: fullName, RoleBased: role, Message: "log_in", Token: token}
 
-	if token == "" {
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(invalidCredentialsResponse)
-	} else {
-		w.WriteHeader(http.StatusOK)
-		addCookie(w, "token", token)
-		json.NewEncoder(w).Encode(validCredentialsResponse)
-	}
+	w.WriteHeader(http.StatusOK)
+	addCookie(w, "token", token)
+	json.NewEncoder(w).Encode(validCredentialsResponse)
 }
+
