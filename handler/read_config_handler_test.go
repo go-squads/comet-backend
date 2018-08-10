@@ -4,18 +4,11 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
-	"github.com/go-squads/comet-backend/appcontext"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestMain(m *testing.M) {
-	appcontext.Initiate()
-	testResult := m.Run()
-	os.Exit(testResult)
-}
 
 func TestReadConfig(t *testing.T) {
 	w := httptest.NewRecorder()

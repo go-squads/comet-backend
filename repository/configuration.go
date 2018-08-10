@@ -100,6 +100,34 @@ func (self ConfigRepository) GetConfiguration(appName string, namespaceName stri
 	return appConfig
 }
 
+func (self ConfigRepository) GetLatestConfiguration(appName string, namespaceName string, token string) []domain.Configuration {
+	var cfg []domain.Configuration
+	var activeVersion int
+	var applicationId int
+	var namespaceId int
+	var rows *sql.Rows
+
+	_ = self.db.QueryRow(getAppIdQuery, appName).Scan(&applicationId)
+	_ = self.db.QueryRow(getNamespaceIdAndActiveVersionQuery, applicationId, namespaceName).Scan(&namespaceId, &activeVersion)
+
+	rows, err = self.db.Query(getConfigurationKeyValueQuery, activeVersion, namespaceId)
+
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+
+	for rows.Next() {
+		var key string
+		var value string
+
+		err = rows.Scan(&key, &value)
+		cfg = append(cfg, domain.Configuration{Key: key, Value: value})
+	}
+	return cfg
+}
+
+
+
 func (self ConfigRepository) InsertConfiguration(newConfigs domain.ConfigurationRequest, token string) domain.Response {
 	var latestVersion int
 	var activeVersion int
@@ -337,6 +365,12 @@ func (self ConfigRepository) RollbackVersionNamespace(rollback domain.Configurat
 		return domain.Response{Status: http.StatusOK, Message: "Updated"}
 	}
 }
+
+func (sel ConfigRepository) NewConfig() string{
+	andri:= "andri"
+	return andri
+}
+
 
 func NewConfigurationRepository() ConfigRepository {
 	return ConfigRepository{

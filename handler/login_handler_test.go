@@ -22,5 +22,5 @@ func TestLoginHandler(t *testing.T) {
 	}
 
 	LoginHandler(w, r)
-	assert.Equal(t, "{\"status\":200,\"message\":\"log_in\",\"token\":\"rfBd67ti3SMtYvSgD6xAV1YU00zampta8Z8S686KLkIZ0PYkL28LTlsVqMNTZyLK\"}\n", w.Body.String())
+	assert.Equal(t, "{\"status\":200,\"full_name\":\"comet_user\",\"user_role\":\"admin\",\"message\":\"log_in\",\"token\":\"bSurUUWXGOvWGIzUbvbzCWTsNuCLJMuKzJNzQSGxgIWWXjPVxabkfXOlBBbKqUCq\"}\n", w.Body.String())
 }
