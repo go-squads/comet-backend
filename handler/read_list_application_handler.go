@@ -13,7 +13,7 @@ func GetListOfApplication(w http.ResponseWriter, r *http.Request) {
 
 	listApplication := repository.NewApplicationRepository()
 	fmt.Println(listApplication)
-	application := listApplication.GetApplicationNamespace(header)
+	application := listApplication.GetApplicationOnly(header)
 	fmt.Println(header)
 
 	w.Header().Set("Content-Type", "application/json")

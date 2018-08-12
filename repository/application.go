@@ -166,6 +166,24 @@ func (self ApplicationRepository) GetApplicationNamespace(token string) []domain
 	return lsApplication
 }
 
+func (self ApplicationRepository) GetApplicationOnly(token string) []string{
+	var ls []string
+
+	rows, err := self.db.Query("SELECT name FROM application")
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+
+	for rows.Next() {
+		var applicationName string
+
+		err = rows.Scan(&applicationName)
+		ls = append(ls, applicationName)
+	}
+
+	return ls
+}
+
 func NewApplicationRepository() ApplicationRepository {
 	return ApplicationRepository{
 		db: appcontext.GetDB(),
