@@ -33,6 +33,8 @@ const (
 	showHistoryQuery                     = "SELECT u.username,n.name,predecessor_version,successor_version,h.created_at FROM history AS h INNER JOIN configuration_change as cfg ON h.id=cfg.history_id INNER JOIN namespace AS n ON h.namespace_id = n.id INNER JOIN users AS u ON h.user_id = u.id WHERE n.id = $1"
 	fetchNamespaceQuery                  = "SELECT name FROM namespace WHERE app_id = $1"
 	getListOfApplicationNamespaceQuery   = "SELECT app.name, app.id FROM application AS app INNER JOIN namespace AS n ON app.id = n.id"
+	getApplicationId                     = "select id from application where name = $1"
+	getListOfNamespacesQuery             = "SELECT name FROM namespace WHERE app_id = $1"
 	updateVersionBasedApplicationQuery   = "UPDATE namespace SET active_version = $1 WHERE app_id = $2 and name = $3"
 
 	/*$1 => namespace_id
@@ -124,11 +126,9 @@ func (self ConfigRepository) GetLatestConfiguration(appName string, namespaceNam
 		err = rows.Scan(&key, &value)
 		cfg = append(cfg, domain.Configuration{Key: key, Value: value})
 	}
-	appConfig = domain.ApplicationConfiguration{ Version: activeVersion, Configurations: cfg}
+	appConfig = domain.ApplicationConfiguration{Version: activeVersion, Configurations: cfg}
 	return appConfig
 }
-
-
 
 func (self ConfigRepository) InsertConfiguration(newConfigs domain.ConfigurationRequest, token string) domain.Response {
 	var latestVersion int
@@ -287,7 +287,6 @@ func (self ConfigRepository) ReadHistory(appName string, namespace string, token
 	var successorVersion int
 	var createdTime string
 
-
 	err = self.db.QueryRow(getAppIdQuery, appName).Scan(&applicationId)
 	if err != nil {
 		log.Fatalf(err.Error())
@@ -368,11 +367,10 @@ func (self ConfigRepository) RollbackVersionNamespace(rollback domain.Configurat
 	}
 }
 
-func (sel ConfigRepository) NewConfig() string{
-	andri:= "andri"
+func (sel ConfigRepository) NewConfig() string {
+	andri := "andri"
 	return andri
 }
-
 
 func NewConfigurationRepository() ConfigRepository {
 	return ConfigRepository{

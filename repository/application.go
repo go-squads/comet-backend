@@ -97,7 +97,7 @@ func (self ApplicationRepository) CreateApplication(newApp domain.CreateApplicat
 
 }
 
-func (self ApplicationRepository) CreateNewNamespace(appName string,token string, namespaceName domain.Namespace) domain.Response {
+func (self ApplicationRepository) CreateNewNamespace(appName string, token string, namespaceName domain.Namespace) domain.Response {
 	var applicationId int
 
 	self.setRoleBased(token)
@@ -146,28 +146,24 @@ func (self ApplicationRepository) GetListOfNamespace(applicationId int, token st
 	return list
 }
 
-func (self ApplicationRepository) GetApplicationNamespace(token string) []domain.ApplicationNamespace {
+func (self ApplicationRepository) GetApplicationNamespace(token string, applicationName string) []domain.ApplicationNamespace {
 	var lsApplication []domain.ApplicationNamespace
+	var appId int
 
-	rows, err := self.db.Query(getListOfApplicationNamespaceQuery)
+	self.setRoleBased(token)
+
+	err = self.db.QueryRow(getApplicationId, applicationName).Scan(&appId)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
 
-	for rows.Next() {
-		var applicationName string
-		var applicationId int
+	lsApplication = append(lsApplication, domain.ApplicationNamespace{ApplicationName: "",Namespace: self.GetListOfNamespace(appId, token)})
 
-		err = rows.Scan(&applicationName, &applicationId)
-		lsApplication = append(lsApplication, domain.ApplicationNamespace{ApplicationName: applicationName, Namespace: self.GetListOfNamespace(applicationId,token)})
-	}
-
-	fmt.Println(lsApplication)
 	return lsApplication
 }
 
-func (self ApplicationRepository) GetApplicationOnly(token string) []string{
-	var ls []string
+func (self ApplicationRepository) GetApplicationOnly(token string) []domain.ApplicationNamespace {
+	var ls []domain.ApplicationNamespace
 
 	rows, err := self.db.Query("SELECT name FROM application")
 	if err != nil {
@@ -178,7 +174,7 @@ func (self ApplicationRepository) GetApplicationOnly(token string) []string{
 		var applicationName string
 
 		err = rows.Scan(&applicationName)
-		ls = append(ls, applicationName)
+		ls = append(ls, domain.ApplicationNamespace{ApplicationName: applicationName})
 	}
 
 	return ls
