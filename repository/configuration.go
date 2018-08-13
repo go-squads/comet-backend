@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-squads/comet-backend/appcontext"
 	"github.com/go-squads/comet-backend/domain"
+	"github.com/guregu/null"
 )
 
 var err error
@@ -214,15 +215,15 @@ func (self ConfigRepository) getConfigurationDeletedResponse(namespaceId int, pr
 	}
 
 	for rows.Next() {
-		var oldKey string
-		var newKey string
-		var oldConfig string
-		var newConfig string
+		var oldKey null.String
+		var newKey null.String
+		var oldConfig null.String
+		var newConfig null.String
 
 		err = rows.Scan(&oldKey, &newKey, &oldConfig, &newConfig)
 
-		if newKey == "" {
-			list = append(list, domain.Configuration{Key: oldKey, Value: oldConfig})
+		if newKey.IsZero() {
+			list = append(list, domain.Configuration{Key: oldKey.ValueOrZero(), Value: oldConfig.ValueOrZero()})
 		}
 
 	}
@@ -239,15 +240,15 @@ func (self ConfigRepository) getConfigurationCreatedResponse(namespaceId int, pr
 	}
 
 	for rows.Next() {
-		var oldKey string
-		var newKey string
-		var oldConfig string
-		var newConfig string
+		var oldKey null.String
+		var newKey null.String
+		var oldConfig null.String
+		var newConfig null.String
 
 		err = rows.Scan(&oldKey, &newKey, &oldConfig, &newConfig)
 
-		if oldKey == "" {
-			list = append(list, domain.Configuration{Key: newKey, Value: newConfig})
+		if oldKey.IsZero() {
+			list = append(list, domain.Configuration{Key: newKey.ValueOrZero(), Value: newConfig.ValueOrZero()})
 		}
 	}
 	return list
