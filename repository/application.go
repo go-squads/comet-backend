@@ -117,7 +117,7 @@ func (self ApplicationRepository) CreateNewNamespace(appName string, token strin
 		if self.validateNamespaceName(namespaceName.Name, applicationId) == false {
 			return domain.Response{Status: http.StatusBadRequest, Message: "Namespace already taken"}
 		} else {
-			_, err = self.db.Query(insertNewNamespaceQuery, namespaceName.Name, applicationId, 1, 1)
+			_, err = self.db.Query(insertNewNamespaceQuery, namespaceName.Name, applicationId, 0, 0)
 			if err != nil {
 				return domain.Response{Status: http.StatusForbidden, Message: "Action Forbidden"}
 			}
