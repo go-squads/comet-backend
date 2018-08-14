@@ -1,8 +1,9 @@
 package handler
 
 import (
-	"net/http"
 	"encoding/json"
+	"net/http"
+
 	"github.com/go-squads/comet-backend/repository"
 	"github.com/gorilla/mux"
 )
@@ -13,7 +14,7 @@ func GetLatestConfiguration(w http.ResponseWriter, r *http.Request) {
 
 	configurationRepo := repository.NewConfigurationRepository()
 
-	response := configurationRepo.GetLatestConfiguration(params["app"],params["namespaces"],header)
+	response := configurationRepo.GetLatestConfiguration(params["appName"], params["namespaceName"], header)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Authorization", header)
