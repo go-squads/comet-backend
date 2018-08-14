@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"fmt"
+
 	"github.com/go-squads/comet-backend/domain"
 	"github.com/go-squads/comet-backend/repository"
 )
@@ -32,13 +33,22 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	userRepo := repository.GetUserRepository()
 	token, fullName, role := userRepo.LogIn(user)
 
-	fmt.Println(fullName + " and " + role)
+	if len(fullName) > 0 {
+		fmt.Println(fullName + " and " + role)
 
-	//invalidCredentialsResponse := domain.LoginResponse{Status: http.StatusUnauthorized, Fullname: "", RoleBased: "", Message: "Invalid Credentials", Token: ""}
-	validCredentialsResponse := domain.LoginResponse{Status: http.StatusOK, Fullname: fullName, RoleBased: role, Message: "log_in", Token: token}
+		validCredentialsResponse := domain.LoginResponse{Status: http.StatusOK, Fullname: fullName, RoleBased: role, Message: "log_in", Token: token}
 
-	w.WriteHeader(http.StatusOK)
-	addCookie(w, "token", token)
-	json.NewEncoder(w).Encode(validCredentialsResponse)
+		w.WriteHeader(http.StatusOK)
+		addCookie(w, "token", token)
+		json.NewEncoder(w).Encode(validCredentialsResponse)
+	} else {
+		fmt.Println("not found")
+
+		invalidCredentialsResponse := domain.LoginResponse{Status: http.StatusUnauthorized, Fullname: "", RoleBased: "", Message: "Invalid Credentials", Token: ""}
+
+		w.WriteHeader(http.StatusOK)
+		addCookie(w, "token", token)
+		json.NewEncoder(w).Encode(invalidCredentialsResponse)
+	}
+
 }
-
